@@ -1,0 +1,117 @@
+name: “Retail Intelligence Semantic Model” description: “AI-powered
+product matching and competitive price intelligence for retail
+analytics” version: “1.0”
+
+tables: - name: “PRODUCT_MATCHES_AI” description: “AI-powered product
+matches between ABT and BUY retailers using semantic embeddings and
+cosine similarity” base_table: database: “RETAIL_INTELLIGENCE_DB”
+schema: “ANALYTICS” table: “PRODUCT_MATCHES_AI” dimensions: - name:
+“abt_id” synonyms: [“abt product id”, “abt identifier”, “source product
+id”, “abt product number”] description: “Unique identifier for product
+from ABT retailer” data_type: number unique: false - name: “buy_id”
+synonyms: [“buy product id”, “buy identifier”, “target product id”, “buy
+product number”] description: “Unique identifier for product from BUY
+retailer” data_type: number unique: false - name: “abt_name” synonyms:
+[“abt product name”, “source product name”, “abt product”, “abt item”]
+description: “Product name from ABT retailer catalog” data_type: text
+unique: false - name: “buy_name” synonyms: [“buy product name”, “target
+product name”, “buy product”, “buy item”] description: “Product name
+from BUY retailer catalog” data_type: text unique: false - name:
+“match_confidence” synonyms: [“confidence level”, “match quality”,
+“match grade”, “confidence rating”] description: “AI confidence level of
+the product match (HIGH, MEDIUM, LOW, VERY_LOW)” data_type: text unique:
+false - name: “match_rank” synonyms: [“ranking”, “match position”,
+“rank”] description: “Ranking of this match for the given ABT product (1
+is best match)” data_type: number unique: false measures: - name:
+“semantic_similarity” synonyms: [“similarity score”, “match score”,
+“cosine similarity”, “similarity rating”] description: “Semantic
+similarity score between products using AI embeddings (0-1 scale, higher
+is better)” data_type: number aggregation: avg
+
+-   name: “PRICE_INTELLIGENCE” description: “Comprehensive price
+    comparison and competitive analysis between ABT and BUY retailers”
+    base_table: database: “RETAIL_INTELLIGENCE_DB” schema: “ANALYTICS”
+    table: “PRICE_INTELLIGENCE” dimensions:
+    -   name: “abt_id” synonyms: [“abt product id”, “abt identifier”]
+        description: “ABT product identifier” data_type: number unique:
+        false
+    -   name: “buy_id” synonyms: [“buy product id”, “buy identifier”]
+        description: “BUY product identifier” data_type: number unique:
+        false
+    -   name: “abt_name” synonyms: [“abt product name”, “abt product”]
+        description: “ABT product name” data_type: text unique: false
+    -   name: “buy_name” synonyms: [“buy product name”, “buy product”]
+        description: “BUY product name” data_type: text unique: false
+    -   name: “product_category” synonyms: [“category”, “product type”,
+        “product class”, “category name”] description: “AI-generated
+        product category classification” data_type: text unique: false
+    -   name: “price_position” synonyms: [“competitive position”, “price
+        competitiveness”, “pricing status”, “who is cheaper”]
+        description: “Relative price position between retailers (Price
+        Parity, BUY is Cheaper, ABT is Cheaper)” data_type: text unique:
+        false
+    -   name: “match_confidence” synonyms: [“confidence”, “match
+        quality”, “confidence level”] description: “Match confidence
+        level (HIGH, MEDIUM, LOW)” data_type: text unique: false
+        measures:
+    -   name: “abt_price” synonyms: [“abt cost”, “abt pricing”, “source
+        price”, “abt dollar amount”] description: “Product price from
+        ABT retailer in USD” data_type: number aggregation: avg
+    -   name: “buy_price” synonyms: [“buy cost”, “buy pricing”, “target
+        price”, “buy dollar amount”] description: “Product price from
+        BUY retailer in USD” data_type: number aggregation: avg
+    -   name: “price_difference” synonyms: [“price gap”, “price delta”,
+        “price spread”, “absolute difference”] description: “Absolute
+        price difference between retailers (BUY price - ABT price)”
+        data_type: number aggregation: avg
+    -   name: “price_diff_pct” synonyms: [“price difference percentage”,
+        “price variance”, “percent difference”, “percentage gap”]
+        description: “Price difference as percentage relative to ABT
+        price” data_type: number aggregation: avg
+    -   name: “competitiveness_score” synonyms: [“competitive score”,
+        “price competitiveness”, “competitiveness rating”] description:
+        “Competitiveness score on 0-100 scale (higher means more
+        competitive)” data_type: number aggregation: avg
+    -   name: “semantic_similarity” synonyms: [“similarity”, “match
+        score”] description: “Semantic similarity score between matched
+        products” data_type: number aggregation: avg
+-   name: “PRODUCT_CATEGORIES” description: “AI-generated product
+    categorization using Cortex Complete LLM” base_table: database:
+    “RETAIL_INTELLIGENCE_DB” schema: “ANALYTICS” table:
+    “PRODUCT_CATEGORIES” dimensions:
+    -   name: “product_id” synonyms: [“id”, “product identifier”,
+        “product number”] description: “Unique product identifier”
+        data_type: number unique: false
+    -   name: “source_retailer” synonyms: [“retailer”, “source”,
+        “seller”, “store”] description: “Source retailer name (ABT or
+        BUY)” data_type: text unique: false
+    -   name: “product_name” synonyms: [“name”, “product”, “item name”]
+        description: “Product name” data_type: text unique: false
+    -   name: “category” synonyms: [“product category”, “product type”,
+        “classification”] description: “AI-assigned product category”
+        data_type: text unique: false
+
+relationships: - name: “match_to_price” description: “Relationship
+between product matches and price intelligence” left_table:
+“PRODUCT_MATCHES_AI” right_table: “PRICE_INTELLIGENCE” join_type: “left”
+join_condition: “PRODUCT_MATCHES_AI.abt_id = PRICE_INTELLIGENCE.abt_id
+AND PRODUCT_MATCHES_AI.buy_id = PRICE_INTELLIGENCE.buy_id”
+
+-   name: “match_to_category” description: “Relationship between product
+    matches and categories” left_table: “PRODUCT_MATCHES_AI”
+    right_table: “PRODUCT_CATEGORIES” join_type: “left” join_condition:
+    “PRODUCT_MATCHES_AI.abt_id = PRODUCT_CATEGORIES.product_id”
+
+sample_questions: - “What are the top 10 product matches with highest
+similarity scores?” - “Show me all products where BUY is cheaper by more
+than 10 percent” - “What is the average price difference by product
+category?” - “How many high confidence matches do we have?” - “Which
+products have price parity between ABT and BUY?” - “What is the overall
+price competitiveness by category?” - “Show me electronics products with
+high confidence matches” - “What are the top 5 categories with most
+products?” - “Find products where the price difference is more than
+$50” - “What is the average similarity score for medium confidence
+matches?” - “Show me all matches for ABT product id 123” - “Which
+retailer is generally cheaper across all categories?” - “What percentage
+of products have high confidence matches?” - “Show me the distribution
+of products by category and retailer”

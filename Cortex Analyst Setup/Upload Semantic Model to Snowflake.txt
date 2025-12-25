@@ -1,0 +1,42 @@
+-- Create stage for Cortex Analyst semantic model
+USE SCHEMA RETAIL_INTELLIGENCE_DB.ANALYTICS;
+
+CREATE OR REPLACE STAGE CORTEX_ANALYST_STAGE
+  DIRECTORY = (ENABLE = TRUE)
+  ENCRYPTION = (TYPE = 'SNOWFLAKE_SSE')
+  COMMENT = 'Stage for Cortex Analyst semantic models';
+
+-- Grant permissions
+GRANT READ, WRITE ON STAGE CORTEX_ANALYST_STAGE TO ROLE ACCOUNTADMIN;
+
+-- List files in stage (after upload)
+LIST @CORTEX_ANALYST_STAGE;
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+C:\Users\janga>snowsql -a FZDBCPS-YZB78869 -u pj
+Password:
+* SnowSQL * v1.4.5
+Type SQL statements or !help
+pj#COMPUTE_WH@(no database).(no schema)>USE DATABASE RETAIL_INTELLIGENCE_DB;
++----------------------------------+
+| status                           |
+|----------------------------------|
+| Statement executed successfully. |
++----------------------------------+
+1 Row(s) produced. Time Elapsed: 0.350s
+pj#COMPUTE_WH@RETAIL_INTELLIGENCE_DB.PUBLIC>USE SCHEMA ANALYTICS;
++----------------------------------+
+| status                           |
+|----------------------------------|
+| Statement executed successfully. |
++----------------------------------+
+1 Row(s) produced. Time Elapsed: 0.329s
+pj#COMPUTE_WH@RETAIL_INTELLIGENCE_DB.ANALYTICS>PUT file://C:/Users/janga/Downloads/Abt-Buy/retail_semantic_model.yaml @CORTEX_ANALYST_STAGE;
++----------------------------+-------------------------------+-------------+-------------+--------------------+--------------------+----------+---------+
+| source                     | target                        | source_size | target_size | source_compression | target_compression | status   | message |
+|----------------------------+-------------------------------+-------------+-------------+--------------------+--------------------+----------+---------|
+| retail_semantic_model.yaml | retail_semantic_model.yaml.gz |        7886 |        1952 | NONE               | GZIP               | UPLOADED |         |
++----------------------------+-------------------------------+-------------+-------------+--------------------+--------------------+----------+---------+
+1 Row(s) produced. Time Elapsed: 3.406s
+pj#COMPUTE_WH@RETAIL_INTELLIGENCE_DB.ANALYTICS>

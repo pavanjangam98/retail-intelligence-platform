@@ -1,0 +1,30 @@
+-- Use ACCOUNTADMIN role
+USE ROLE ACCOUNTADMIN;
+
+-- Create database
+CREATE OR REPLACE DATABASE RETAIL_INTELLIGENCE_DB
+  COMMENT = 'Retail Intelligence Platform for Product Matching';
+
+-- Create schemas
+CREATE OR REPLACE SCHEMA RETAIL_INTELLIGENCE_DB.RAW
+  COMMENT = 'Raw data from source systems';
+  
+CREATE OR REPLACE SCHEMA RETAIL_INTELLIGENCE_DB.STAGING
+  COMMENT = 'Cleaned and standardized data';
+  
+CREATE OR REPLACE SCHEMA RETAIL_INTELLIGENCE_DB.ANALYTICS
+  COMMENT = 'Business logic and analytics';
+  
+CREATE OR REPLACE SCHEMA RETAIL_INTELLIGENCE_DB.MART
+  COMMENT = 'Aggregated data for reporting';
+
+-- Create warehouse
+CREATE OR REPLACE WAREHOUSE RETAIL_WH
+  WAREHOUSE_SIZE = 'XSMALL'
+  AUTO_SUSPEND = 60
+  AUTO_RESUME = TRUE
+  INITIALLY_SUSPENDED = TRUE
+  COMMENT = 'Warehouse for retail intelligence workloads';
+
+-- Use the warehouse
+USE WAREHOUSE RETAIL_WH;

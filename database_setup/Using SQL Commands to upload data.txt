@@ -1,0 +1,80 @@
+-- Upload files to stage (use SnowSQL or Snowsight)
+
+
+-- Load ABT products
+COPY INTO ABT_PRODUCTS (ID, NAME, DESCRIPTION, PRICE)
+FROM @RETAIL_STAGE/Abt.csv
+FILE_FORMAT = CSV_FORMAT
+ON_ERROR = 'CONTINUE';
+
+-- Load BUY products  
+COPY INTO BUY_PRODUCTS (ID, NAME, DESCRIPTION, MANUFACTURER, PRICE)
+FROM @RETAIL_STAGE/Buy.csv
+FILE_FORMAT = CSV_FORMAT
+ON_ERROR = 'CONTINUE';
+
+-- Load ground truth mappings
+COPY INTO PRODUCT_MAPPING_TRUTH (ABT_ID, BUY_ID)
+FROM @RETAIL_STAGE/abt_buy_perfectMapping.csv
+FILE_FORMAT = CSV_FORMAT
+ON_ERROR = 'CONTINUE';
+
+-- Verify data load
+SELECT 'ABT_PRODUCTS' as table_name, COUNT(*) as record_count FROM ABT_PRODUCTS
+UNION ALL
+SELECT 'BUY_PRODUCTS', COUNT(*) FROM BUY_PRODUCTS
+UNION ALL
+SELECT 'PRODUCT_MAPPING_TRUTH', COUNT(*) FROM PRODUCT_MAPPING_TRUTH;
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+USE DATABASE RETAIL_INTELLIGENCE_DB;
+USE SCHEMA raw;
+USE WAREHOUSE COMPUTE_WH;
+
+PUT file://C:/Users/janga/Downloads/Abt-Buy/Abt.csv @RETAIL_STAGE;
+PUT file://C:/Users/janga/Downloads/Abt-Buy/Buy.csv @RETAIL_STAGE;
+PUT file://C:/Users/janga/Downloads/Abt-Buy/abt_buy_perfectMapping.csv @RETAIL_STAGE;
+
+pj#COMPUTE_WH@(no database).(no schema)>USE DATABASE RETAIL_INTELLIGENCE_DB;
++----------------------------------+
+| status                           |
+|----------------------------------|
+| Statement executed successfully. |
++----------------------------------+
+1 Row(s) produced. Time Elapsed: 0.889s
+pj#COMPUTE_WH@RETAIL_INTELLIGENCE_DB.PUBLIC>USE SCHEMA raw;
++----------------------------------+
+| status                           |
+|----------------------------------|
+| Statement executed successfully. |
++----------------------------------+
+1 Row(s) produced. Time Elapsed: 0.331s
+pj#COMPUTE_WH@RETAIL_INTELLIGENCE_DB.RAW>USE WAREHOUSE COMPUTE_WH;
++----------------------------------+
+| status                           |
+|----------------------------------|
+| Statement executed successfully. |
++----------------------------------+
+1 Row(s) produced. Time Elapsed: 0.291s
+pj#COMPUTE_WH@RETAIL_INTELLIGENCE_DB.RAW>PUT file://C:\Users\janga\Downloads\Abt-Buy\Abt.csv @RETAIL_STAGE;
++---------+------------+-------------+-------------+--------------------+--------------------+----------+---------+
+| source  | target     | source_size | target_size | source_compression | target_compression | status   | message |
+|---------+------------+-------------+-------------+--------------------+--------------------+----------+---------|
+| Abt.csv | Abt.csv.gz |      347525 |       88112 | NONE               | GZIP               | UPLOADED |         |
++---------+------------+-------------+-------------+--------------------+--------------------+----------+---------+
+1 Row(s) produced. Time Elapsed: 2.566s
+pj#COMPUTE_WH@RETAIL_INTELLIGENCE_DB.RAW>PUT file://C:\Users\janga\Downloads\Abt-Buy\Buy.csv @RETAIL_STAGE;
++---------+------------+-------------+-------------+--------------------+--------------------+----------+---------+
+| source  | target     | source_size | target_size | source_compression | target_compression | status   | message |
+|---------+------------+-------------+-------------+--------------------+--------------------+----------+---------|
+| Buy.csv | Buy.csv.gz |      129682 |       39056 | NONE               | GZIP               | UPLOADED |         |
++---------+------------+-------------+-------------+--------------------+--------------------+----------+---------+
+1 Row(s) produced. Time Elapsed: 2.170s
+pj#COMPUTE_WH@RETAIL_INTELLIGENCE_DB.RAW>PUT file://C:/Users/janga/Downloads/Abt-Buy/abt_buy_perfectMapping.csv @RETAIL_STAGE;
++----------------------------+-------------------------------+-------------+-------------+--------------------+--------------------+----------+---------+
+| source                     | target                        | source_size | target_size | source_compression | target_compression | status   | message |
+|----------------------------+-------------------------------+-------------+-------------+--------------------+--------------------+----------+---------|
+| abt_buy_perfectMapping.csv | abt_buy_perfectMapping.csv.gz |       18563 |        7024 | NONE               | GZIP               | UPLOADED |         |
++----------------------------+-------------------------------+-------------+-------------+--------------------+--------------------+----------+---------+
+1 Row(s) produced. Time Elapsed: 3.124s

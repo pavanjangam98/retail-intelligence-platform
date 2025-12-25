@@ -1,0 +1,4 @@
+snowflake-snowpark-python
+plotly>=5.0.0
+pandas
+streamlit>=1.28.0
