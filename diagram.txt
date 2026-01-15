@@ -1,0 +1,116 @@
+flowchart LR
+    %% Sources
+    ABT[ABT.csv<br/>1,092 products]
+    BUY[BUY.csv<br/>1,081 products]
+
+    %% Raw Layer
+    RAW[(Snowflake RAW<br/>ABT_RAW<br/>BUY_RAW)]
+
+    %% Staging
+    STAGE[Staging Layer<br/>• Clean data<br/>• Standardize<br/>• Validate]
+
+    %% Feature Engineering
+    FE[Feature Engineering<br/>• Normalize prices<br/>• Text cleaning<br/>• Token creation]
+
+    %% Embeddings
+    EMB[Cortex Embeddings<br/>Snowflake.Cortex.Embed_Text_768<br/>• 768-dim vectors]
+
+    %% Matching
+    MATCH[Matching Engine<br/>• Vector search<br/>• Cosine similarity<br/>• Multi-strategy]
+
+    %% Outputs
+    PM[Product Matches<br/>• Match pairs<br/>• Confidence<br/>• Similarity]
+    PI[Price Intelligence<br/>• Price diff<br/>• Positions<br/>• Insights]
+    CAT[Categories<br/>• Auto-classification<br/>• LLM-based<br/>• 10 groups]
+
+    %% Presentation
+    PRES[Presentation Layer]
+    STREAM[Streamlit App]
+    DASH[Snowsight Dashboards]
+    ANALYST[Cortex Analyst<br/>Natural Language]
+
+    %% Users
+    USERS[Business Users<br/>Analysts]
+
+    %% Flow
+    ABT --> RAW
+    BUY --> RAW
+
+    RAW -->|dbt transform| STAGE
+    STAGE --> FE
+    FE --> EMB
+    EMB --> MATCH
+
+    MATCH --> PM
+    MATCH --> PI
+    MATCH --> CAT
+
+    PM --> PRES
+    PI --> PRES
+    CAT --> PRES
+
+    PRES --> STREAM
+    PRES --> DASH
+    PRES --> ANALYST
+
+    STREAM --> USERS
+    DASH --> USERS
+    ANALYST --> USERS
+--------------------------------
+flowchart TD
+    %% Sources
+    ABT[ABT.csv<br/>1,092 products]
+    BUY[BUY.csv<br/>1,081 products]
+
+    %% Raw Layer
+    RAW[(Snowflake RAW<br/>ABT_RAW<br/>BUY_RAW)]
+
+    %% Staging
+    STAGE[Staging Layer<br/>• Clean data<br/>• Standardize<br/>• Validate]
+
+    %% Feature Engineering
+    FE[Feature Engineering<br/>• Normalize prices<br/>• Text cleaning<br/>• Token creation]
+
+    %% Embeddings
+    EMB[Cortex Embeddings<br/>Snowflake.Cortex.Embed_Text_768<br/>• 768-dim vectors]
+
+    %% Matching
+    MATCH[Matching Engine<br/>• Vector search<br/>• Cosine similarity<br/>• Multi-strategy]
+
+    %% Outputs
+    PM[Product Matches<br/>• Match pairs<br/>• Confidence<br/>• Similarity]
+    PI[Price Intelligence<br/>• Price diff<br/>• Positions<br/>• Insights]
+    CAT[Categories<br/>• Auto-classification<br/>• LLM-based<br/>• 10 groups]
+
+    %% Presentation
+    PRES[Presentation Layer]
+    STREAM[Streamlit App]
+    DASH[Snowsight Dashboards]
+    ANALYST[Cortex Analyst<br/>Natural Language]
+
+    %% Users
+    USERS[Business Users / Analysts]
+
+    %% Flow
+    ABT --> RAW
+    BUY --> RAW
+    RAW -->|dbt transform| STAGE
+    STAGE --> FE
+    FE --> EMB
+    EMB --> MATCH
+
+    MATCH --> PM
+    MATCH --> PI
+    MATCH --> CAT
+
+    PM --> PRES
+    PI --> PRES
+    CAT --> PRES
+
+    PRES --> STREAM
+    PRES --> DASH
+    PRES --> ANALYST
+
+    STREAM --> USERS
+    DASH --> USERS
+    ANALYST --> USERS
