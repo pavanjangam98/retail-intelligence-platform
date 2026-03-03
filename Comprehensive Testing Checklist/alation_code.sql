@@ -142,6 +142,23 @@ SELECT
 
 FROM ranked
 WHERE rn = 1
+
+++++++++++++++++++++++++
+alation.yml
+++++++++++++++++++++++++
+version: 2
+
+sources:
+  - name: alation_analytics_share
+    database: ALATION__ANALYTICS__SHARE
+    schema: PUBLIC
+
+    tables:
+      - name: alation_set_member
+      - name: catalog_set_membership
+      - name: rdbms_columns
+      - name: rdbms_tables
+      - name: rdbms_schemas
 +++++++++++++++++++++++++++++
 WITH temp_table AS (
     SELECT 
@@ -278,3 +295,5 @@ SELECT
 FROM ranked
 WHERE rn = 1
 ORDER BY db_name, schema_name, table_name, column_name;
+
+
