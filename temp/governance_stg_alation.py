@@ -2,7 +2,9 @@ import os
 import json
 from datetime import datetime
 from airflow.decorators import dag
+
 from cosmos import DbtTaskGroup, ProjectConfig, ProfileConfig, ExecutionConfig, RenderConfig
+from cosmos.constants import ExecutionMode
 from cosmos.profiles import SnowflakePrivateKeyPemProfileMapping
 
 # ---------------------------------------------------------------------------
@@ -15,11 +17,12 @@ project_path = "/usr/local/airflow/dags/repo/dags/bdh_cust_dbt/"
 # ---------------------------------------------------------------------------
 # Load model config
 # ---------------------------------------------------------------------------
-config_path = "/usr/local/airflow/dags/repo/dags/config/customer_models_loadtype_config.json"
+config_path = "/usr/local/airflow/dags/repo/dags/config/governance_models_loadtype_config.json"
+
 with open(config_path, "r") as f:
     model_config = json.load(f)
 
-model_name = "stg_alation__alation__rdbms_tables"  # representative model for config lookup
+model_name = "stg_alation__alation__rdbms_tables"
 
 load_type = model_config.get(model_name, {}).get("load_type", "incremental")
 days_back = model_config.get(model_name, {}).get("days_back", 0)
@@ -66,24 +69,30 @@ def governance_stg_alation():
         - stg_alation__alation__rdbms_tables
     """
 
-    # ------------------------------------------------------------------
-    # stg_alation — 6 incremental models
-    # Cosmos resolves intra-group deps via the manifest automatically.
-    # ------------------------------------------------------------------
     stg_alation_dag = DbtTaskGroup(
         group_id="stg_alation_dag",
+
         project_config=ProjectConfig(project_path),
+
         profile_config=profile_config,
-        execution_config=ExecutionConfig(dbt_executable_path=dbt_executable_path),
+
+        execution_config=ExecutionConfig(
+            dbt_executable_path=dbt_executable_path,
+            execution_mode=ExecutionMode.LOCAL,  # 👈 ensures each model is a task
+        ),
+
         operator_args={
             "install_deps": False,
             "vars": {
-                "run_type": "incremental",
+                "run_type": load_type,
                 "days_back": days_back,
                 "tool_name": tool_name,
             },
         },
+
         render_config=RenderConfig(
+            load_method="manifest",  # 👈 use dbt manifest for dependency graph
+
             select=[
                 "stg_alation__alation__alation_set_member",
                 "stg_alation__alation__catalog_set_membership",
@@ -92,12 +101,18 @@ def governance_stg_alation():
                 "stg_alation__alation__rdbms_schemas",
                 "stg_alation__alation__rdbms_tables",
             ],
+
+            node_name_template="{{ node.name }}",  # 👈 clean task names
             dbt_deps=False,
         ),
-        default_args={"retries": 0},
+
+        default_args={
+            "retries": 0,
+        },
     )
 
     stg_alation_dag
 
 
+# Instantiate DAG
 governance_stg_alation()
