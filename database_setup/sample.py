@@ -46,6 +46,21 @@ profile_config = ProfileConfig(
 )
 
 # ---------------------------------------------------------------------------
+# Model list
+# Structure: models/stg_alation/<model_name>.sql
+# select uses path relative to models/ folder  →  stg_alation/<model_name>
+# ---------------------------------------------------------------------------
+MODELS = [
+    "stg_alation__alation__alation_set_member",
+    "stg_alation__alation__catalog_set_membership",
+    "stg_alation__alation__rdbms_columns",
+    "stg_alation__alation__rdbms_datasources",
+    "stg_alation__alation__rdbms_schemas",
+    "stg_alation__alation__rdbms_tables",
+]
+
+
+# ---------------------------------------------------------------------------
 # DAG
 # ---------------------------------------------------------------------------
 @dag(
@@ -58,77 +73,20 @@ profile_config = ProfileConfig(
 )
 def governance_stg_alation():
 
-    # ----------------------------
-    # Model 1
-    # ----------------------------
-    stg_alation_set_member = DbtRunOperator(
-        task_id="stg_alation__alation__alation_set_member",
-        project_dir=project_path,
-        profile_config=profile_config,
-        select="stg_alation__alation__alation_set_member",
-        vars=get_model_vars("stg_alation__alation__alation_set_member"),
-        dbt_executable_path=dbt_executable_path,
-    )
+    task_objects = []
 
-    # ----------------------------
-    # Model 2
-    # ----------------------------
-    catalog_set_membership = DbtRunOperator(
-        task_id="stg_alation__alation__catalog_set_membership",
-        project_dir=project_path,
-        profile_config=profile_config,
-        select="stg_alation__alation__catalog_set_membership",
-        vars=get_model_vars("stg_alation__alation__catalog_set_membership"),
-        dbt_executable_path=dbt_executable_path,
-    )
-
-    # ----------------------------
-    # Model 3
-    # ----------------------------
-    rdbms_columns = DbtRunOperator(
-        task_id="stg_alation__alation__rdbms_columns",
-        project_dir=project_path,
-        profile_config=profile_config,
-        select="stg_alation__alation__rdbms_columns",
-        vars=get_model_vars("stg_alation__alation__rdbms_columns"),
-        dbt_executable_path=dbt_executable_path,
-    )
-
-    # ----------------------------
-    # Model 4
-    # ----------------------------
-    rdbms_datasources = DbtRunOperator(
-        task_id="stg_alation__alation__rdbms_datasources",
-        project_dir=project_path,
-        profile_config=profile_config,
-        select="stg_alation__alation__rdbms_datasources",
-        vars=get_model_vars("stg_alation__alation__rdbms_datasources"),
-        dbt_executable_path=dbt_executable_path,
-    )
-
-    # ----------------------------
-    # Model 5
-    # ----------------------------
-    rdbms_schemas = DbtRunOperator(
-        task_id="stg_alation__alation__rdbms_schemas",
-        project_dir=project_path,
-        profile_config=profile_config,
-        select="stg_alation__alation__rdbms_schemas",
-        vars=get_model_vars("stg_alation__alation__rdbms_schemas"),
-        dbt_executable_path=dbt_executable_path,
-    )
-
-    # ----------------------------
-    # Model 6
-    # ----------------------------
-    rdbms_tables = DbtRunOperator(
-        task_id="stg_alation__alation__rdbms_tables",
-        project_dir=project_path,
-        profile_config=profile_config,
-        select="stg_alation__alation__rdbms_tables",
-        vars=get_model_vars("stg_alation__alation__rdbms_tables"),
-        dbt_executable_path=dbt_executable_path,
-    )
+    for model_name in MODELS:
+        t = DbtRunOperator(
+            task_id=model_name,
+            project_dir=project_path,
+            profile_config=profile_config,
+            # FIX: path format  →  stg_alation/<model_name>
+            # This matches models/stg_alation/<model_name>.sql on disk
+            select=f"stg_alation.{model_name}",
+            vars=get_model_vars(model_name),
+            dbt_executable_path=dbt_executable_path,
+        )
+        task_objects.append(t)
 
     # ----------------------------
     # Final logging task
@@ -139,17 +97,12 @@ def governance_stg_alation():
         return "SUCCESS"
 
     # ----------------------------
-    # Define dependencies (sequential)
+    # Sequential dependency chain
     # ----------------------------
-    (
-        stg_alation_set_member
-        >> catalog_set_membership
-        >> rdbms_columns
-        >> rdbms_datasources
-        >> rdbms_schemas
-        >> rdbms_tables
-        >> log_completion()
-    )
+    for i in range(len(task_objects) - 1):
+        task_objects[i] >> task_objects[i + 1]
+
+    task_objects[-1] >> log_completion()
 
 
 # Instantiate DAG
