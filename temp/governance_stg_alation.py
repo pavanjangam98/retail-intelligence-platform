@@ -2,8 +2,7 @@ import os
 import json
 from datetime import datetime
 from airflow.decorators import dag
-
-from cosmos import DbtTaskGroup, ProjectConfig, ProfileConfig, ExecutionConfig, RenderConfig
+from cosmos import DbtTaskGroup, ProjectConfig, ProfileConfig, ExecutionConfig, RenderConfig, LoadMode
 from cosmos.constants import ExecutionMode
 from cosmos.profiles import SnowflakePrivateKeyPemProfileMapping
 
@@ -18,7 +17,6 @@ project_path = "/usr/local/airflow/dags/repo/dags/bdh_cust_dbt/"
 # Load model config
 # ---------------------------------------------------------------------------
 config_path = "/usr/local/airflow/dags/repo/dags/config/governance_models_loadtype_config.json"
-
 with open(config_path, "r") as f:
     model_config = json.load(f)
 
@@ -44,7 +42,10 @@ profile_config = ProfileConfig(
 )
 
 dbt_executable_path = f"{os.environ['AIRFLOW_HOME']}/dbt_venv/bin/dbt"
-print(f"DBT Executable Path: {dbt_executable_path}")
+manifest_path       = f"{project_path}target/manifest.json"  # ✅ required for LoadMode.DBT_MANIFEST
+
+print(f"DBT Executable Path : {dbt_executable_path}")
+print(f"Manifest Path       : {manifest_path}")
 
 # ---------------------------------------------------------------------------
 # DAG
@@ -71,16 +72,15 @@ def governance_stg_alation():
 
     stg_alation_dag = DbtTaskGroup(
         group_id="stg_alation_dag",
-
-        project_config=ProjectConfig(project_path),
-
+        project_config=ProjectConfig(
+            project_path,
+            manifest_path=manifest_path,    # ✅ added — tells Cosmos where the manifest is
+        ),
         profile_config=profile_config,
-
         execution_config=ExecutionConfig(
             dbt_executable_path=dbt_executable_path,
-            execution_mode=ExecutionMode.LOCAL,  # 👈 ensures each model is a task
+            execution_mode=ExecutionMode.LOCAL,  # ✅ each model becomes an individual task
         ),
-
         operator_args={
             "install_deps": False,
             "vars": {
@@ -89,10 +89,8 @@ def governance_stg_alation():
                 "tool_name": tool_name,
             },
         },
-
         render_config=RenderConfig(
-            load_method="manifest",  # 👈 use dbt manifest for dependency graph
-
+            load_method=LoadMode.DBT_MANIFEST,  # ✅ fixed — enum instead of plain string "manifest"
             select=[
                 "stg_alation__alation__alation_set_member",
                 "stg_alation__alation__catalog_set_membership",
@@ -101,14 +99,10 @@ def governance_stg_alation():
                 "stg_alation__alation__rdbms_schemas",
                 "stg_alation__alation__rdbms_tables",
             ],
-
-            node_name_template="{{ node.name }}",  # 👈 clean task names
+            # ✅ removed node_name_template — not a valid RenderConfig parameter
             dbt_deps=False,
         ),
-
-        default_args={
-            "retries": 0,
-        },
+        default_args={"retries": 0},
     )
 
     stg_alation_dag
