@@ -61,7 +61,8 @@ def governance_stg_alation_rdbms_columns():
         task_id="stg_alation__alation__rdbms_columns",
         project_dir=project_path,
         profile_config=profile_config,
-        models=model_name,
+        # FIX: dbt 1.11+ requires `select` not `models`
+        select=model_name,
         vars={
             "run_type":  load_type,
             "days_back": days_back,
