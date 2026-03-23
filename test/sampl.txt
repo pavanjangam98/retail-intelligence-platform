@@ -1,6 +1,8 @@
 import os
 from datetime import datetime
-from cosmos import DbtDag, ProjectConfig, ProfileConfig, ExecutionConfig, RenderConfig
+from airflow.decorators import dag, task
+from cosmos import ProfileConfig
+from cosmos.operators import DbtRunOperator
 from cosmos.profiles import SnowflakePrivateKeyPemProfileMapping
 
 # ------------------------
@@ -8,31 +10,49 @@ from cosmos.profiles import SnowflakePrivateKeyPemProfileMapping
 # ------------------------
 target_name = os.getenv("TARGET_NAME", "DEV").lower()
 schema_name  = os.getenv("SCHEMA_NAME", "governance").lower()
+project_path = "/usr/local/airflow/dags/repo/dags/bdh_governance_dbt/"
+dbt_executable_path = f"{os.environ['AIRFLOW_HOME']}/dbt_venv/bin/dbt"
+
+# ------------------------
+# Profile Config
+# ------------------------
+profile_config = ProfileConfig(
+    profile_name="default",
+    target_name=target_name,
+    profile_mapping=SnowflakePrivateKeyPemProfileMapping(
+        conn_id="sfconnect",
+        profile_args={"schema": schema_name},
+    ),
+)
 
 # ------------------------
 # DAG
 # ------------------------
-governance_stg_alation_rdbms_columns = DbtDag(
-    project_config=ProjectConfig(
-        "/usr/local/airflow/dags/repo/dags/bdh_governance_dbt/"
-    ),
-    profile_config=ProfileConfig(
-        profile_name="default",
-        target_name=target_name,
-        profile_mapping=SnowflakePrivateKeyPemProfileMapping(
-            conn_id="sfconnect",
-            profile_args={"schema": schema_name},
-        ),
-    ),
-    execution_config=ExecutionConfig(
-        dbt_executable_path=f"{os.environ['AIRFLOW_HOME']}/dbt_venv/bin/dbt"
-    ),
-    render_config=RenderConfig(
-        select=["stg_alation__alation__rdbms_columns"],
-    ),
-    schedule_interval="@daily",
-    start_date=datetime(2025, 9, 25),
-    catchup=False,
+@dag(
     dag_id="governance_stg_alation_rdbms_columns",
+    start_date=datetime(2025, 9, 25),
+    schedule="@daily",
+    catchup=False,
     tags=["daily", "governance", "alation"],
+    description="Daily refresh for stg_alation__alation__rdbms_columns",
+    max_active_runs=1,
 )
+def governance_stg_alation_rdbms_columns():
+
+    run_rdbms_columns = DbtRunOperator(
+        task_id="stg_alation__alation__rdbms_columns",
+        project_dir=project_path,
+        profile_config=profile_config,
+        select="stg_alation__alation__rdbms_columns",   # dbt 1.11+ uses --select
+        dbt_executable_path=dbt_executable_path,
+    )
+
+    @task
+    def log_completion():
+        print("Successfully ran: stg_alation__alation__rdbms_columns")
+        return "SUCCESS"
+
+    run_rdbms_columns >> log_completion()
+
+
+dag = governance_stg_alation_rdbms_columns()
