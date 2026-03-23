@@ -1,1 +1,38 @@
-aaa
+import os
+from datetime import datetime
+from cosmos import DbtDag, ProjectConfig, ProfileConfig, ExecutionConfig, RenderConfig
+from cosmos.profiles import SnowflakePrivateKeyPemProfileMapping
+
+# ------------------------
+# Environment
+# ------------------------
+target_name = os.getenv("TARGET_NAME", "DEV").lower()
+schema_name  = os.getenv("SCHEMA_NAME", "governance").lower()
+
+# ------------------------
+# DAG
+# ------------------------
+governance_stg_alation_rdbms_columns = DbtDag(
+    project_config=ProjectConfig(
+        "/usr/local/airflow/dags/repo/dags/bdh_governance_dbt/"
+    ),
+    profile_config=ProfileConfig(
+        profile_name="default",
+        target_name=target_name,
+        profile_mapping=SnowflakePrivateKeyPemProfileMapping(
+            conn_id="sfconnect",
+            profile_args={"schema": schema_name},
+        ),
+    ),
+    execution_config=ExecutionConfig(
+        dbt_executable_path=f"{os.environ['AIRFLOW_HOME']}/dbt_venv/bin/dbt"
+    ),
+    render_config=RenderConfig(
+        select=["stg_alation__alation__rdbms_columns"],
+    ),
+    schedule_interval="@daily",
+    start_date=datetime(2025, 9, 25),
+    catchup=False,
+    dag_id="governance_stg_alation_rdbms_columns",
+    tags=["daily", "governance", "alation"],
+)
