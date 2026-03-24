@@ -1,0 +1,76 @@
+version: 2
+
+sources:
+  - name: classification
+    database: governance_{{ target.name }}
+    schema: governance_classification
+    tables:
+      - name: governance_classification_data_history
+
+models:
+
+  # -----------------------------
+  # HISTORY MODEL
+  # -----------------------------
+  - name: governance_classification__governance_classification_data_history
+    description: "{{ doc('governance_classification__governance_classification_data_history') }}"
+
+    columns:
+      - name: classification_id
+        description: "{{ doc('governance_classification__governance_classification_data_history__classification_id') }}"
+
+      - name: db_name
+        description: "{{ doc('governance_classification__governance_classification_data_history__db_name') }}"
+
+      - name: schema_name
+        description: "{{ doc('governance_classification__governance_classification_data_history__schema_name') }}"
+
+      - name: table_name
+        description: "{{ doc('governance_classification__governance_classification_data_history__table_name') }}"
+
+      - name: column_name
+        description: "{{ doc('governance_classification__governance_classification_data_history__column_name') }}"
+
+      - name: security_classification_code
+        description: "{{ doc('governance_classification__governance_classification_data_history__security_classification_code') }}"
+
+      - name: business_key_flag
+        description: "{{ doc('governance_classification__governance_classification_data_history__business_key_flag') }}"
+
+      - name: primary_key_flag
+        description: "{{ doc('governance_classification__governance_classification_data_history__primary_key_flag') }}"
+
+      - name: is_src_deleted
+        description: "{{ doc('governance_classification__governance_classification_data_history__is_src_deleted') }}"
+
+      - name: source_ds_update
+        description: "{{ doc('governance_classification__governance_classification_data_history__source_ds_update') }}"
+
+      - name: dwh_effective_from_tstamp
+        description: "{{ doc('governance_classification__governance_classification_data_history__dwh_effective_from_tstamp') }}"
+
+      - name: dwh_effective_to_tstamp
+        description: "{{ doc('governance_classification__governance_classification_data_history__dwh_effective_to_tstamp') }}"
+
+      - name: dwh_change_type
+        description: "{{ doc('governance_classification__governance_classification_data_history__dwh_change_type') }}"
+
+      - name: is_active
+        description: "{{ doc('governance_classification__governance_classification_data_history__is_active') }}"
+
+      - name: dwh_attribute_hash
+        description: "{{ doc('governance_classification__governance_classification_data_history__dwh_attribute_hash') }}"
+
+      - name: dwh_process_tstamp
+        description: "{{ doc('governance_classification__governance_classification_data_history__dwh_process_tstamp') }}"
+
+
+  # -----------------------------
+  # ACTIVE VIEW
+  # -----------------------------
+  - name: governance_classification__classification_active
+    description: "{{ doc('governance_classification__classification_active') }}"
+
+    columns:
+      - name: classification_id
+        description: "{{ doc('governance_classification__classification_active__classification_id') }}"
