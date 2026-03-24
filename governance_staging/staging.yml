@@ -1,0 +1,61 @@
+version: 2
+
+sources:
+  - name: staging
+    database: governance_{{ target.name }}
+    schema: governance_staging
+    tables:
+      - name: governance_classification_data
+
+models:
+  - name: governance_staging__governance_classification_data
+    description: "{{ doc('governance_staging__governance_classification_data') }}"
+
+    columns:
+      - name: object_id
+        description: "{{ doc('governance_staging__governance_classification_data__object_id') }}"
+
+      - name: db_name
+        description: "{{ doc('governance_staging__governance_classification_data__db_name') }}"
+
+      - name: schema_name
+        description: "{{ doc('governance_staging__governance_classification_data__schema_name') }}"
+
+      - name: table_name
+        description: "{{ doc('governance_staging__governance_classification_data__table_name') }}"
+
+      - name: column_name
+        description: "{{ doc('governance_staging__governance_classification_data__column_name') }}"
+
+      - name: security_classification_code
+        description: "{{ doc('governance_staging__governance_classification_data__security_classification_code') }}"
+
+      - name: source_system
+        description: "{{ doc('governance_staging__governance_classification_data__source_system') }}"
+
+      - name: zone_name
+        description: "{{ doc('governance_staging__governance_classification_data__zone_name') }}"
+
+      - name: env_name
+        description: "{{ doc('governance_staging__governance_classification_data__env_name') }}"
+
+      - name: business_key_flag
+        description: "{{ doc('governance_staging__governance_classification_data__business_key_flag') }}"
+
+      - name: primary_key_flag
+        description: "{{ doc('governance_staging__governance_classification_data__primary_key_flag') }}"
+
+      - name: data_type
+        description: "{{ doc('governance_staging__governance_classification_data__data_type') }}"
+
+      - name: is_src_deleted
+        description: "{{ doc('governance_staging__governance_classification_data__is_src_deleted') }}"
+
+      - name: source_ds_update
+        description: "{{ doc('governance_staging__governance_classification_data__source_ds_update') }}"
+
+      - name: record_created_at
+        description: "{{ doc('governance_staging__governance_classification_data__record_created_at') }}"
+
+      - name: record_updated_at
+        description: "{{ doc('governance_staging__governance_classification_data__record_updated_at') }}"
