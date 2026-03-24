@@ -1,0 +1,48 @@
+{
+  "stg_alation__alation__alation_set_member": {
+    "load_type": "incremental",
+    "days_back": 1,
+    "tool_name": "airflow"
+  },
+  "stg_alation__alation__catalog_set_membership": {
+    "load_type": "incremental",
+    "days_back": 1,
+    "tool_name": "airflow"
+  },
+  "stg_alation__alation__rdbms_columns": {
+    "load_type": "incremental",
+    "days_back": 1,
+    "tool_name": "airflow"
+  },
+  "stg_alation__alation__rdbms_datasources": {
+    "load_type": "incremental",
+    "days_back": 1,
+    "tool_name": "airflow"
+  },
+  "stg_alation__alation__rdbms_schemas": {
+    "load_type": "incremental",
+    "days_back": 1,
+    "tool_name": "airflow"
+  },
+  "stg_alation__alation__rdbms_tables": {
+    "load_type": "incremental",
+    "days_back": 1,
+    "tool_name": "airflow"
+  },
+
+  "governance_staging__governance_classification_data": {
+    "load_type": "full",
+    "days_back": 0,
+    "tool_name": "airflow"
+  },
+  "governance_classification__governance_classification_data_history": {
+    "load_type": "incremental",
+    "days_back": 1,
+    "tool_name": "airflow"
+  },
+  "governance_classification__classification_active": {
+    "load_type": "view",
+    "days_back": 0,
+    "tool_name": "airflow"
+  }
+}
