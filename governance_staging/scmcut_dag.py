@@ -5,14 +5,12 @@ from cosmos.operators import DbtRunOperator
 from cosmos import ProfileConfig
 from cosmos.profiles import SnowflakePrivateKeyPemProfileMapping
 
-# Environment configs
 target_name = os.getenv("TARGET_NAME", "DEV").lower()
-schema_name = os.getenv("SCHEMA_NAME", "governance").lower()
-
-project_path = "/usr/local/airflow/dags/repo/dags/bdh_governance_dbt/"
+schema_name = os.getenv("SCHEMA_NAME", "fdp__custmstr").lower()
+project_path = "/usr/local/airflow/repo/dags/bdh_customer_dbt/"
 dbt_executable_path = f"{os.environ['AIRFLOW_HOME']}/dbt_venv/bin/dbt"
 
-MODEL_NAME = "foundation__fdp__custmstr__fdp__party_address"
+MODEL_NAME = "foundation___fdp__custmstr___fdp__party_address"
 
 # Snowflake profile
 profile_config = ProfileConfig(
@@ -24,14 +22,16 @@ profile_config = ProfileConfig(
     ),
 )
 
+
 @dag(
-    dag_id="test_dbt_model_run",
-    start_date=datetime(2025, 1, 1),
-    schedule=None,  # manual trigger
+    dag_id="scmcust_foundation_fdp_custmstr_fdp__party_address",
+    start_date=datetime(2025, 9, 25),
+    schedule="0 12 * * *",  # Runs daily at 12:00 PM UTC
     catchup=False,
-    tags=["test"],
+    tags=["daily", "governance", "alation"],
+    max_active_runs=1,
 )
-def test_dbt_model_run():
+def scmcust_foundation_fdp_custmstr_fdp__party_address():
 
     run_model = DbtRunOperator(
         task_id="run_dbt_model",
@@ -39,9 +39,10 @@ def test_dbt_model_run():
         profile_config=profile_config,
         select=[MODEL_NAME],
         dbt_executable_path=dbt_executable_path,
-    )
+    )  # ✅ Fixed: closed parenthesis
 
-    run_model
+    run_model  # ✅ Task registered in DAG
 
 
-dag = test_dbt_model_run()
+# ✅ Fixed: DAG instantiation call
+scmcust_foundation_fdp_custmstr_fdp__party_address()
