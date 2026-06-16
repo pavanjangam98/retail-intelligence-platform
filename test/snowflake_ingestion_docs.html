@@ -1,0 +1,1513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Snowflake Bulk Ingestion — Framework Docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ── Reset ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+/* ── Tokens ── */
+:root{
+  --ink:       #0D1117;
+  --ink2:      #161C24;
+  --ink3:      #1F2937;
+  --ink4:      #293241;
+  --border:    #2D3748;
+  --border2:   #374357;
+  --teal:      #29D9A0;
+  --teal-bg:   #29D9A012;
+  --teal-b:    #29D9A030;
+  --purple:    #C084FC;
+  --purple-bg: #C084FC12;
+  --purple-b:  #C084FC30;
+  --amber:     #F59E0B;
+  --amber-bg:  #F59E0B12;
+  --amber-b:   #F59E0B30;
+  --coral:     #F87171;
+  --coral-bg:  #F8717112;
+  --coral-b:   #F8717130;
+  --blue:      #60A5FA;
+  --blue-bg:   #60A5FA12;
+  --blue-b:    #60A5FA30;
+  --text:      #E2E8F0;
+  --text2:     #94A3B8;
+  --text3:     #64748B;
+  --mono:      'IBM Plex Mono', monospace;
+  --sans:      'Inter', system-ui, sans-serif;
+  --r:         6px;
+}
+
+html{scroll-behavior:smooth}
+
+body{
+  background:var(--ink);
+  color:var(--text);
+  font-family:var(--sans);
+  font-size:14.5px;
+  line-height:1.75;
+  display:flex;
+  min-height:100vh;
+}
+
+/* ══════════════════════════════════════
+   SIDEBAR
+══════════════════════════════════════ */
+aside{
+  width:252px;
+  min-width:252px;
+  background:var(--ink2);
+  border-right:1px solid var(--border);
+  display:flex;
+  flex-direction:column;
+  position:sticky;
+  top:0;
+  height:100vh;
+  overflow-y:auto;
+  flex-shrink:0;
+  scrollbar-width:thin;
+  scrollbar-color:var(--border) transparent;
+}
+
+.nav-header{
+  padding:24px 20px 20px;
+  border-bottom:1px solid var(--border);
+}
+
+.nav-logo{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:12px;
+}
+
+.nav-snowflake{
+  width:32px;height:32px;
+  background:var(--teal-bg);
+  border:1px solid var(--teal-b);
+  border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;flex-shrink:0;
+}
+
+.nav-brand{
+  font-family:var(--mono);
+  font-size:11px;
+  font-weight:600;
+  color:var(--text2);
+  line-height:1.4;
+  letter-spacing:0.02em;
+}
+
+.nav-brand span{display:block;color:var(--teal);font-size:9px;letter-spacing:0.1em;text-transform:uppercase}
+
+.nav-search{
+  width:100%;
+  background:var(--ink3);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  padding:7px 12px;
+  font-family:var(--sans);
+  font-size:12px;
+  color:var(--text2);
+  outline:none;
+  transition:border-color 0.2s;
+}
+.nav-search:focus{border-color:var(--teal)}
+.nav-search::placeholder{color:var(--text3)}
+
+.nav-group{padding:16px 0 4px}
+
+.nav-group-label{
+  font-family:var(--mono);
+  font-size:9px;
+  font-weight:600;
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  color:var(--text3);
+  padding:0 20px 6px;
+}
+
+nav a{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  padding:6px 20px;
+  font-size:13px;
+  color:var(--text2);
+  text-decoration:none;
+  border-left:2px solid transparent;
+  transition:all 0.15s;
+  line-height:1.4;
+}
+nav a:hover{color:var(--text);background:var(--ink3)}
+nav a.active{color:var(--teal);border-left-color:var(--teal);background:var(--teal-bg)}
+
+.nav-icon{font-size:13px;opacity:0.7;flex-shrink:0;width:16px;text-align:center}
+
+/* ══════════════════════════════════════
+   MAIN
+══════════════════════════════════════ */
+main{
+  flex:1;
+  max-width:860px;
+  padding:52px 60px 100px;
+  overflow-x:hidden;
+}
+
+/* ── Section wrappers ── */
+.doc-section{
+  padding-bottom:64px;
+  border-bottom:1px solid var(--border);
+  margin-bottom:64px;
+  scroll-margin-top:32px;
+}
+.doc-section:last-child{border-bottom:none}
+
+/* ── Typography ── */
+.eyebrow{
+  font-family:var(--mono);
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  color:var(--teal);
+  margin-bottom:10px;
+}
+
+h1{font-size:30px;font-weight:600;line-height:1.2;color:var(--text);margin-bottom:14px}
+h2{font-size:20px;font-weight:600;color:var(--text);margin-bottom:8px;line-height:1.3}
+h3{font-size:14px;font-weight:600;color:var(--text);margin:28px 0 10px}
+h4{font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px}
+
+p{color:var(--text2);margin-bottom:14px;max-width:640px}
+
+.lead{font-size:15.5px;color:var(--text2);max-width:580px;line-height:1.7;margin-bottom:20px}
+
+/* ── Tag chips ── */
+.tag{
+  display:inline-block;
+  font-family:var(--mono);
+  font-size:10px;
+  font-weight:600;
+  padding:2px 8px;
+  border-radius:3px;
+  border:1px solid;
+  vertical-align:middle;
+  letter-spacing:0.04em;
+}
+.tag-teal  {color:var(--teal);  border-color:var(--teal-b);  background:var(--teal-bg)}
+.tag-purple{color:var(--purple);border-color:var(--purple-b);background:var(--purple-bg)}
+.tag-amber {color:var(--amber); border-color:var(--amber-b); background:var(--amber-bg)}
+.tag-coral {color:var(--coral); border-color:var(--coral-b); background:var(--coral-bg)}
+.tag-blue  {color:var(--blue);  border-color:var(--blue-b);  background:var(--blue-bg)}
+
+/* ── Inline code ── */
+code{
+  font-family:var(--mono);
+  font-size:11.5px;
+  background:var(--ink3);
+  border:1px solid var(--border);
+  padding:1px 6px;
+  border-radius:3px;
+  color:var(--teal);
+}
+
+/* ── Code blocks ── */
+.codeblock{
+  background:var(--ink2);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  margin:14px 0 20px;
+  overflow:hidden;
+}
+.codeblock-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:9px 16px;
+  background:var(--ink3);
+  border-bottom:1px solid var(--border);
+}
+.codeblock-lang{
+  font-family:var(--mono);
+  font-size:9px;
+  font-weight:600;
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+  color:var(--text3);
+}
+.codeblock-file{
+  font-family:var(--mono);
+  font-size:11px;
+  color:var(--teal);
+}
+.codeblock pre{
+  padding:16px 20px;
+  overflow-x:auto;
+  font-family:var(--mono);
+  font-size:12px;
+  line-height:1.8;
+  color:var(--text);
+  tab-size:4;
+}
+/* Syntax colours */
+.kw{color:#C084FC}
+.fn{color:#60A5FA}
+.st{color:#86EFAC}
+.cm{color:#4B5563;font-style:italic}
+.nb{color:#F59E0B}
+.cl{color:#29D9A0}
+.op{color:#94A3B8}
+
+/* ── ARCHITECTURE DIAGRAM ── */
+.arch-wrap{
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:var(--ink2);
+  padding:28px 24px 20px;
+  margin:20px 0 28px;
+  overflow-x:auto;
+}
+
+.arch-row{
+  display:grid;
+  grid-template-columns:80px 1fr;
+  align-items:center;
+  gap:12px;
+  margin-bottom:6px;
+}
+
+.arch-layer-label{
+  font-family:var(--mono);
+  font-size:9px;
+  font-weight:600;
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+  color:var(--text3);
+  text-align:right;
+  line-height:1.3;
+}
+
+.arch-boxes{
+  display:flex;
+  gap:6px;
+  flex-wrap:nowrap;
+}
+
+.arch-box{
+  flex:1;
+  min-width:0;
+  padding:10px 12px;
+  border-radius:6px;
+  border:1px solid;
+  cursor:default;
+  transition:transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+}
+.arch-box:hover{transform:translateY(-2px)}
+
+.arch-box-name{
+  font-family:var(--mono);
+  font-size:11px;
+  font-weight:600;
+  display:block;
+  margin-bottom:1px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.arch-box-sub{
+  font-family:var(--sans);
+  font-size:10px;
+  opacity:0.65;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.ab-teal  {border-color:var(--teal-b);  background:var(--teal-bg);  color:var(--teal)}
+.ab-purple{border-color:var(--purple-b);background:var(--purple-bg);color:var(--purple)}
+.ab-gray  {border-color:var(--border2); background:var(--ink3);     color:var(--text2)}
+.ab-coral {border-color:var(--coral-b); background:var(--coral-bg); color:var(--coral)}
+.ab-dash  {border-style:dashed;border-color:var(--border);background:transparent;color:var(--text3)}
+
+.arch-arrow-row{
+  display:grid;
+  grid-template-columns:80px 1fr;
+  gap:12px;
+  margin-bottom:4px;
+}
+.arch-arrows{
+  display:flex;
+  gap:6px;
+  justify-content:center;
+  padding:2px 0;
+}
+.arch-arrow-item{
+  flex:1;
+  text-align:center;
+  color:var(--border2);
+  font-size:13px;
+  line-height:1;
+}
+
+/* ── Info cards grid ── */
+.card-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:10px;
+  margin:18px 0;
+}
+.card{
+  background:var(--ink2);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  padding:16px 18px;
+  transition:border-color 0.15s;
+}
+.card:hover{border-color:var(--border2)}
+.card-icon{font-size:18px;margin-bottom:8px}
+.card h4{font-size:12.5px;margin-bottom:5px}
+.card p{font-size:12px;margin:0;max-width:none}
+
+/* ── Tables ── */
+.doc-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:12.5px;
+  margin:14px 0 22px;
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  overflow:hidden;
+}
+.doc-table thead tr{background:var(--ink3)}
+.doc-table th{
+  font-family:var(--mono);
+  font-size:9px;
+  font-weight:600;
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+  color:var(--text3);
+  padding:10px 14px;
+  text-align:left;
+  border-bottom:1px solid var(--border);
+}
+.doc-table td{
+  padding:10px 14px;
+  border-bottom:1px solid var(--border);
+  color:var(--text2);
+  vertical-align:top;
+  line-height:1.5;
+}
+.doc-table tr:last-child td{border-bottom:none}
+.doc-table tr:hover td{background:var(--ink3)}
+
+/* ── File tree ── */
+.filetree{
+  background:var(--ink2);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  padding:18px 22px;
+  font-family:var(--mono);
+  font-size:12.5px;
+  line-height:2;
+  margin:14px 0;
+}
+.ft-dir {color:var(--blue)}
+.ft-py  {color:var(--teal)}
+.ft-sql {color:var(--amber)}
+.ft-txt {color:var(--text2)}
+.ft-cm  {color:var(--text3);font-style:italic}
+
+/* ── Steps ── */
+.steps{display:flex;flex-direction:column;gap:0;margin:16px 0}
+.step{
+  display:grid;
+  grid-template-columns:36px 1fr;
+  gap:0 18px;
+  padding-bottom:28px;
+  position:relative;
+}
+.step::before{
+  content:'';
+  position:absolute;
+  left:17px;top:36px;bottom:0;
+  width:2px;background:var(--border);
+}
+.step:last-child::before{display:none}
+.step-num{
+  width:36px;height:36px;
+  border-radius:50%;
+  background:var(--ink3);
+  border:2px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);
+  font-size:12px;font-weight:600;
+  color:var(--teal);
+  flex-shrink:0;z-index:1;position:relative;
+}
+.step-body{padding-top:6px}
+.step-body h4{margin-bottom:4px}
+.step-body p{font-size:12.5px;margin-bottom:8px}
+
+/* ── Debug steps ── */
+.debug-steps{display:flex;flex-direction:column;margin:16px 0}
+.debug-step{
+  display:flex;gap:14px;
+  padding:16px 0;
+  border-bottom:1px solid var(--border);
+  align-items:flex-start;
+}
+.debug-step:last-child{border-bottom:none}
+.debug-badge{
+  font-family:var(--mono);
+  font-size:9px;font-weight:600;
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+  color:var(--amber);
+  background:var(--amber-bg);
+  border:1px solid var(--amber-b);
+  border-radius:3px;
+  padding:3px 8px;
+  flex-shrink:0;
+  margin-top:3px;
+  white-space:nowrap;
+}
+.debug-body h4{font-size:13px;margin-bottom:4px}
+.debug-body p{font-size:12px;margin:0 0 8px;max-width:none}
+
+/* ── Load mode cards ── */
+.mode-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin:16px 0;
+}
+.mode-card{
+  background:var(--ink2);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  padding:18px 20px;
+  position:relative;
+  overflow:hidden;
+}
+.mode-card::after{
+  content:'';
+  position:absolute;
+  top:0;left:0;right:0;height:2px;
+}
+.mode-card.live::after  {background:var(--teal)}
+.mode-card.future::after{background:var(--purple)}
+.mode-status{
+  font-family:var(--mono);
+  font-size:9px;font-weight:600;
+  letter-spacing:0.1em;text-transform:uppercase;
+  margin-bottom:6px;display:block;
+}
+.mode-card.live .mode-status  {color:var(--teal)}
+.mode-card.future .mode-status{color:var(--purple)}
+.mode-card h4{font-family:var(--mono);font-size:14px;font-weight:600;margin-bottom:8px}
+.mode-card p{font-size:12px;margin:0 0 10px}
+.mode-card ul{font-size:11.5px;color:var(--text2);padding-left:16px}
+.mode-card ul li{margin-bottom:3px}
+
+/* ── Alerts ── */
+.alert{
+  border-left:3px solid;
+  padding:13px 16px;
+  border-radius:0 var(--r) var(--r) 0;
+  margin:16px 0;
+  font-size:12.5px;
+}
+.alert-teal  {border-color:var(--teal);  background:var(--teal-bg);  color:var(--teal)}
+.alert-amber {border-color:var(--amber); background:var(--amber-bg); color:var(--amber)}
+.alert-blue  {border-color:var(--blue);  background:var(--blue-bg);  color:var(--blue)}
+.alert strong{font-weight:600}
+.alert p{color:inherit;margin:4px 0 0;font-size:12.5px;max-width:none}
+
+/* ── Flow diagram (task pipeline) ── */
+.pipeline{
+  display:flex;
+  align-items:center;
+  gap:0;
+  margin:18px 0;
+  overflow-x:auto;
+  padding-bottom:4px;
+}
+.pipe-task{
+  background:var(--ink2);
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:10px 14px;
+  white-space:nowrap;
+}
+.pipe-task-name{
+  font-family:var(--mono);
+  font-size:12px;font-weight:600;
+  color:var(--purple);
+  display:block;
+}
+.pipe-task-sub{
+  font-size:10.5px;
+  color:var(--text3);
+  display:block;
+  margin-top:2px;
+}
+.pipe-arrow{
+  font-size:14px;
+  color:var(--border2);
+  padding:0 8px;
+  flex-shrink:0;
+}
+.pipe-expand{
+  font-family:var(--mono);
+  font-size:9px;
+  color:var(--teal);
+  background:var(--teal-bg);
+  border:1px solid var(--teal-b);
+  padding:2px 6px;
+  border-radius:3px;
+  display:block;
+  margin-top:4px;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* ── Responsive ── */
+@media(max-width:840px){
+  aside{display:none}
+  main{padding:28px 20px 60px;max-width:100%}
+  .mode-grid{grid-template-columns:1fr}
+}
+
+@media(prefers-reduced-motion:reduce){
+  *{transition:none!important;animation:none!important}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════
+     SIDEBAR
+════════════════════════════════════ -->
+<aside>
+  <div class="nav-header">
+    <div class="nav-logo">
+      <div class="nav-snowflake">❄️</div>
+      <div class="nav-brand">
+        <span>Framework Docs</span>
+        Snowflake Bulk Ingestion
+      </div>
+    </div>
+    <input class="nav-search" type="text" placeholder="Search docs…" oninput="filterNav(this.value)">
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-label">Introduction</div>
+    <nav id="navlinks">
+      <a href="#overview"      class="active"><span class="nav-icon">🏠</span>Overview</a>
+      <a href="#architecture">          <span class="nav-icon">🗺</span>Architecture</a>
+      <a href="#files">                 <span class="nav-icon">📁</span>File structure</a>
+    </nav>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-label">Setup</div>
+    <nav>
+      <a href="#snowflake-setup">  <span class="nav-icon">🏔</span>Snowflake setup</a>
+      <a href="#airflow-setup">    <span class="nav-icon">🌬</span>Airflow setup</a>
+      <a href="#deploy">           <span class="nav-icon">🚀</span>Deploy &amp; first run</a>
+    </nav>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-label">Code walkthrough</div>
+    <nav>
+      <a href="#dag">             <span class="nav-icon">⚙️</span>DAG file</a>
+      <a href="#audit-logger">    <span class="nav-icon">📋</span>AuditLogger</a>
+      <a href="#loader">          <span class="nav-icon">📥</span>SnowflakeLoader</a>
+      <a href="#writer">          <span class="nav-icon">💾</span>CopyResultsWriter</a>
+    </nav>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-label">Operations</div>
+    <nav>
+      <a href="#debug">           <span class="nav-icon">🔍</span>Debug a failure</a>
+      <a href="#load-modes">      <span class="nav-icon">🔄</span>Load modes</a>
+      <a href="#add-table">       <span class="nav-icon">➕</span>Add a new table</a>
+      <a href="#cdc">             <span class="nav-icon">📡</span>Future CDC</a>
+      <a href="#testing">         <span class="nav-icon">✅</span>Testing</a>
+    </nav>
+  </div>
+</aside>
+
+<!-- ═══════════════════════════════════
+     MAIN
+════════════════════════════════════ -->
+<main>
+
+<!-- ── OVERVIEW ── -->
+<section class="doc-section" id="overview">
+  <div class="eyebrow">Snowflake · Astronomer Airflow · Python</div>
+  <h1>Snowflake Bulk Ingestion<br>Framework</h1>
+  <p class="lead">A metadata-driven data pipeline that loads files from Snowflake stages into target tables — with parallel execution, full audit logging, and clear extension points for CDC.</p>
+
+  <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:24px">
+    <span class="tag tag-teal">COPY INTO</span>
+    <span class="tag tag-purple">Dynamic task mapping</span>
+    <span class="tag tag-amber">Audit logging</span>
+    <span class="tag tag-coral">Error tracing</span>
+    <span class="tag tag-blue">CDC-ready</span>
+  </div>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-icon">⚡</div>
+      <h4>Parallel by default</h4>
+      <p>Each table gets its own independent Airflow task. 50 tables run simultaneously — not sequentially.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🗂</div>
+      <h4>Metadata-driven</h4>
+      <p>Add a table by inserting one row into <code>INGEST_CONFIG</code>. Zero code changes required.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🔍</div>
+      <h4>Debuggable</h4>
+      <p>Three audit tables tell you exactly which file, line, and column caused a failure in seconds.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🔄</div>
+      <h4>CDC extension points</h4>
+      <p>MERGE and Stream CDC are already stubbed in <code>SnowflakeLoader</code>. Implement without touching the DAG.</p>
+    </div>
+  </div>
+
+  <h3>Why not use <code>SQLExecuteQueryOperator</code>?</h3>
+  <table class="doc-table">
+    <thead><tr><th>Capability needed</th><th>SQLExecuteQueryOperator</th><th>@task + SnowflakeHook ✓</th></tr></thead>
+    <tbody>
+      <tr><td>Dynamic task mapping (N tables → N tasks)</td><td>❌ static operators only</td><td>✅ .expand(config=configs)</td></tr>
+      <tr><td>Read COPY INTO result rows</td><td>❌ fire-and-forget</td><td>✅ hook.get_records() returns rows</td></tr>
+      <tr><td>Conditional logic (TRUNCATE before COPY)</td><td>❌ no branching</td><td>✅ plain Python if/else</td></tr>
+      <tr><td>Try/catch for audit logging on failure</td><td>❌ no hooks on error</td><td>✅ full exception handling</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ── ARCHITECTURE ── -->
+<section class="doc-section" id="architecture">
+  <div class="eyebrow">How it fits together</div>
+  <h2>Architecture</h2>
+  <p>Four layers. Each talks only to the one below. When something breaks, the layer name tells you which file to open.</p>
+
+  <div class="arch-wrap">
+    <!-- Layer 1 -->
+    <div class="arch-row">
+      <div class="arch-layer-label">Snowflake<br>objects</div>
+      <div class="arch-boxes">
+        <div class="arch-box ab-teal">
+          <span class="arch-box-name">INGEST_CONFIG</span>
+          <span class="arch-box-sub">one row per table</span>
+        </div>
+        <div class="arch-box ab-teal">
+          <span class="arch-box-name">File formats</span>
+          <span class="arch-box-sub">CSV · Parquet · JSON</span>
+        </div>
+        <div class="arch-box ab-teal">
+          <span class="arch-box-name">Stages</span>
+          <span class="arch-box-sub">raw file landing zone</span>
+        </div>
+      </div>
+    </div>
+    <div class="arch-arrow-row">
+      <div></div>
+      <div class="arch-arrows">
+        <div class="arch-arrow-item">↓</div>
+        <div class="arch-arrow-item">↓</div>
+        <div class="arch-arrow-item">↓</div>
+      </div>
+    </div>
+
+    <!-- Layer 2 -->
+    <div class="arch-row">
+      <div class="arch-layer-label">Airflow<br>DAG tasks</div>
+      <div class="arch-boxes">
+        <div class="arch-box ab-purple">
+          <span class="arch-box-name">get_configs</span>
+          <span class="arch-box-sub">reads active rows</span>
+        </div>
+        <div class="arch-box ab-purple">
+          <span class="arch-box-name">validate_table</span>
+          <span class="arch-box-sub">dry-run check</span>
+        </div>
+        <div class="arch-box ab-purple">
+          <span class="arch-box-name">load_table</span>
+          <span class="arch-box-sub">runs COPY INTO</span>
+        </div>
+        <div class="arch-box ab-dash">
+          <span class="arch-box-name">CDC / MERGE</span>
+          <span class="arch-box-sub">future mode</span>
+        </div>
+      </div>
+    </div>
+    <div class="arch-arrow-row">
+      <div></div>
+      <div class="arch-arrows">
+        <div class="arch-arrow-item"></div>
+        <div class="arch-arrow-item"></div>
+        <div class="arch-arrow-item">↓</div>
+        <div class="arch-arrow-item"></div>
+      </div>
+    </div>
+
+    <!-- Layer 3 -->
+    <div class="arch-row">
+      <div class="arch-layer-label">Helper<br>classes</div>
+      <div class="arch-boxes">
+        <div class="arch-box ab-gray">
+          <span class="arch-box-name">SnowflakeLoader</span>
+          <span class="arch-box-sub">runs COPY INTO SQL</span>
+        </div>
+        <div class="arch-box ab-gray">
+          <span class="arch-box-name">AuditLogger</span>
+          <span class="arch-box-sub">writes audit rows</span>
+        </div>
+        <div class="arch-box ab-gray">
+          <span class="arch-box-name">CopyResultsWriter</span>
+          <span class="arch-box-sub">per-file COPY detail</span>
+        </div>
+      </div>
+    </div>
+    <div class="arch-arrow-row">
+      <div></div>
+      <div class="arch-arrows">
+        <div class="arch-arrow-item">↓</div>
+        <div class="arch-arrow-item">↓</div>
+        <div class="arch-arrow-item">↓</div>
+      </div>
+    </div>
+
+    <!-- Layer 4 -->
+    <div class="arch-row">
+      <div class="arch-layer-label">Audit<br>tables</div>
+      <div class="arch-boxes">
+        <div class="arch-box ab-coral">
+          <span class="arch-box-name">ETL_AUDIT</span>
+          <span class="arch-box-sub">per-run status</span>
+        </div>
+        <div class="arch-box ab-coral">
+          <span class="arch-box-name">ETL_ERROR_LOG</span>
+          <span class="arch-box-sub">full traceback</span>
+        </div>
+        <div class="arch-box ab-coral">
+          <span class="arch-box-name">ETL_COPY_RESULTS</span>
+          <span class="arch-box-sub">per-file errors</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="alert alert-teal">
+    <strong>Core principle:</strong>
+    <p>The DAG file has zero SQL. All SQL lives in helper classes. When something fails, the class name tells you exactly which file to open — no hunting through a 200-line function.</p>
+  </div>
+</section>
+
+<!-- ── FILE STRUCTURE ── -->
+<section class="doc-section" id="files">
+  <div class="eyebrow">Project layout</div>
+  <h2>File structure</h2>
+  <p>One file per responsibility. Open the right file for the right problem.</p>
+
+  <div class="filetree">
+<span class="ft-dir">project/</span>
+├── <span class="ft-dir">dags/</span>
+│   └── <span class="ft-py">snowflake_bulk_ingestion.py</span>   <span class="ft-cm">← orchestration only, no SQL</span>
+│
+├── <span class="ft-dir">plugins/</span>
+│   └── <span class="ft-dir">ingestion/</span>
+│       ├── <span class="ft-py">__init__.py</span>                <span class="ft-cm">← re-exports all helpers</span>
+│       ├── <span class="ft-py">audit_logger.py</span>            <span class="ft-cm">← ETL_AUDIT + ETL_ERROR_LOG</span>
+│       ├── <span class="ft-py">snowflake_loader.py</span>        <span class="ft-cm">← COPY INTO + result parsing</span>
+│       └── <span class="ft-py">copy_results_writer.py</span>     <span class="ft-cm">← ETL_COPY_RESULTS</span>
+│
+├── <span class="ft-dir">sql/</span>
+│   ├── <span class="ft-sql">01_setup_objects.sql</span>          <span class="ft-cm">← run once in Snowflake</span>
+│   └── <span class="ft-sql">02_debug_queries.sql</span>          <span class="ft-cm">← use when something fails</span>
+│
+├── <span class="ft-dir">tests/</span>
+│   └── <span class="ft-py">test_helpers.py</span>               <span class="ft-cm">← unit tests, no real DB needed</span>
+│
+└── <span class="ft-txt">requirements.txt</span>
+  </div>
+
+  <table class="doc-table">
+    <thead><tr><th>File</th><th>Its one job</th><th>Open it when…</th></tr></thead>
+    <tbody>
+      <tr><td><code>snowflake_bulk_ingestion.py</code></td><td>Wires tasks together</td><td>Changing the task flow or schedule</td></tr>
+      <tr><td><code>audit_logger.py</code></td><td>Writes ETL_AUDIT + ETL_ERROR_LOG</td><td>Audit rows are wrong or missing</td></tr>
+      <tr><td><code>snowflake_loader.py</code></td><td>Builds + runs COPY INTO</td><td>Load is failing or loading wrong data</td></tr>
+      <tr><td><code>copy_results_writer.py</code></td><td>Saves per-file COPY results</td><td>Per-file detail is missing</td></tr>
+      <tr><td><code>01_setup_objects.sql</code></td><td>Creates all Snowflake objects</td><td>First-time setup</td></tr>
+      <tr><td><code>02_debug_queries.sql</code></td><td>Step-by-step failure queries</td><td>A load fails in production</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ── SNOWFLAKE SETUP ── -->
+<section class="doc-section" id="snowflake-setup">
+  <div class="eyebrow">Step 1</div>
+  <h2>Snowflake setup</h2>
+  <p>Run <code>01_setup_objects.sql</code> once in Snowsight (select all → Run). This creates everything the framework needs.</p>
+
+  <h3>Objects created</h3>
+  <table class="doc-table">
+    <thead><tr><th>Object</th><th>Type</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>INGEST_CONFIG</code></td><td>Table</td><td>One row per table. DAG reads this at runtime to know what to load.</td></tr>
+      <tr><td><code>ETL_AUDIT</code></td><td>Table</td><td>One row per task run. Shows status, row count, duration. Check this first.</td></tr>
+      <tr><td><code>ETL_ERROR_LOG</code></td><td>Table</td><td>Full Python traceback on failure. Check after ETL_AUDIT shows FAILED.</td></tr>
+      <tr><td><code>ETL_COPY_RESULTS</code></td><td>Table</td><td>One row per file per run. Shows exact line number + column name on error.</td></tr>
+      <tr><td><code>CSV_FORMAT</code></td><td>File format</td><td>CSV with header skip, quote handling, null mapping.</td></tr>
+      <tr><td><code>PARQUET_FORMAT</code></td><td>File format</td><td>Snappy Parquet.</td></tr>
+      <tr><td><code>JSON_FORMAT</code></td><td>File format</td><td>JSON arrays with outer array stripping.</td></tr>
+      <tr><td><code>V_DAILY_SUMMARY</code></td><td>View</td><td>Daily batch totals — good for a monitoring dashboard.</td></tr>
+      <tr><td><code>V_LATEST_STATUS</code></td><td>View</td><td>Most recent run per table.</td></tr>
+      <tr><td><code>V_OPEN_ERRORS</code></td><td>View</td><td>All unresolved failures with error detail.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>INGEST_CONFIG — column reference</h3>
+  <table class="doc-table">
+    <thead><tr><th>Column</th><th>Example</th><th>What it controls</th></tr></thead>
+    <tbody>
+      <tr><td><code>TABLE_NAME</code></td><td>CUSTOMER</td><td>Target Snowflake table (must already exist)</td></tr>
+      <tr><td><code>STAGE_NAME</code></td><td>@RAW.CUSTOMER_STAGE</td><td>Stage containing the source files</td></tr>
+      <tr><td><code>FILE_FORMAT</code></td><td>CSV_FORMAT</td><td>Must match a FILE FORMAT object name</td></tr>
+      <tr><td><code>FILE_PATTERN</code></td><td>.*\.csv</td><td>Regex to filter files in the stage. Default: <code>.*</code> (all)</td></tr>
+      <tr><td><code>TARGET_SCHEMA</code></td><td>PUBLIC</td><td>Schema of the target table. Default: PUBLIC</td></tr>
+      <tr><td><code>LOAD_MODE</code></td><td>APPEND</td><td>APPEND, TRUNCATE_LOAD, or MERGE (future)</td></tr>
+      <tr><td><code>IS_ACTIVE</code></td><td>TRUE</td><td>Set FALSE to pause a table without deleting the row</td></tr>
+      <tr><td><code>PRIORITY</code></td><td>10</td><td>Lower number loads first (for dependency ordering)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Sample config insert</h3>
+  <div class="codeblock">
+    <div class="codeblock-header"><span class="codeblock-lang">SQL</span><span class="codeblock-file">INGEST_CONFIG</span></div>
+    <pre><span class="kw">INSERT INTO</span> INGEST_CONFIG
+    (TABLE_NAME, STAGE_NAME, FILE_FORMAT, LOAD_MODE, PRIORITY, NOTES)
+<span class="kw">VALUES</span>
+    (<span class="st">'CUSTOMER'</span>, <span class="st">'@RAW.CUSTOMER_STAGE'</span>, <span class="st">'CSV_FORMAT'</span>,     <span class="st">'APPEND'</span>,        10, <span class="st">'Daily feed'</span>),
+    (<span class="st">'ORDERS'</span>,   <span class="st">'@RAW.ORDERS_STAGE'</span>,   <span class="st">'PARQUET_FORMAT'</span>, <span class="st">'APPEND'</span>,        20, <span class="st">'Daily feed'</span>),
+    (<span class="st">'PRODUCTS'</span>, <span class="st">'@RAW.PRODUCT_STAGE'</span>,  <span class="st">'JSON_FORMAT'</span>,    <span class="st">'TRUNCATE_LOAD'</span>, 30, <span class="st">'Full refresh'</span>);</pre>
+  </div>
+</section>
+
+<!-- ── AIRFLOW SETUP ── -->
+<section class="doc-section" id="airflow-setup">
+  <div class="eyebrow">Step 2</div>
+  <h2>Airflow setup</h2>
+
+  <h3>Create the Snowflake connection</h3>
+  <p>Airflow UI → <strong>Admin → Connections → +</strong></p>
+  <table class="doc-table">
+    <thead><tr><th>Field</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td><code>Conn ID</code></td><td>snowflake_default</td></tr>
+      <tr><td><code>Conn Type</code></td><td>Snowflake</td></tr>
+      <tr><td><code>Account</code></td><td>xy12345.us-east-1 &nbsp;<em style="color:var(--text3)">(your Snowflake account)</em></td></tr>
+      <tr><td><code>Login</code></td><td>your Snowflake username</td></tr>
+      <tr><td><code>Password</code></td><td>your Snowflake password</td></tr>
+      <tr><td><code>Schema</code></td><td>PUBLIC</td></tr>
+      <tr><td><code>Extra (JSON)</code></td><td><code>{"warehouse":"COMPUTE_WH","database":"RAMU","role":"ACCOUNTADMIN"}</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Set Airflow Variables</h3>
+  <p>Airflow UI → <strong>Admin → Variables → +</strong></p>
+  <table class="doc-table">
+    <thead><tr><th>Key</th><th>Default</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td><code>SNOWFLAKE_CONN_ID</code></td><td>snowflake_default</td><td>Which Airflow connection to use</td></tr>
+      <tr><td><code>ALERT_EMAIL</code></td><td>(empty = no email)</td><td>Recipient for the batch summary email</td></tr>
+      <tr><td><code>ENABLE_VALIDATION</code></td><td>true</td><td>Run dry-run COPY check before loading</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Install Python dependencies</h3>
+  <div class="codeblock">
+    <div class="codeblock-header"><span class="codeblock-lang">TXT</span><span class="codeblock-file">requirements.txt</span></div>
+    <pre>apache-airflow==2.9.2
+apache-airflow-providers-snowflake==5.5.2
+snowflake-connector-python==3.10.1
+pytest==8.2.0   <span class="cm"># tests only, not needed in production</span></pre>
+  </div>
+</section>
+
+<!-- ── DEPLOY ── -->
+<section class="doc-section" id="deploy">
+  <div class="eyebrow">Step 3</div>
+  <h2>Deploy &amp; first run</h2>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h4>Copy files to Airflow</h4>
+        <div class="codeblock">
+          <div class="codeblock-header"><span class="codeblock-lang">BASH</span></div>
+          <pre>cp dags/snowflake_bulk_ingestion.py  $AIRFLOW_HOME/dags/
+cp -r plugins/ingestion              $AIRFLOW_HOME/plugins/</pre>
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h4>Verify the DAG appears (wait ~30 seconds)</h4>
+        <div class="codeblock">
+          <div class="codeblock-header"><span class="codeblock-lang">BASH</span></div>
+          <pre>airflow dags list | grep snowflake_bulk_ingestion</pre>
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h4>Trigger a manual run</h4>
+        <div class="codeblock">
+          <div class="codeblock-header"><span class="codeblock-lang">BASH</span></div>
+          <pre>airflow dags trigger snowflake_bulk_ingestion</pre>
+        </div>
+        <p>Or click <strong>Trigger DAG ▶</strong> in the Airflow UI.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <h4>Check results in Snowflake</h4>
+        <div class="codeblock">
+          <div class="codeblock-header"><span class="codeblock-lang">SQL</span><span class="codeblock-file">Snowsight</span></div>
+          <pre><span class="kw">SELECT</span> * <span class="kw">FROM</span> V_LATEST_STATUS;   <span class="cm">-- status per table</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> V_OPEN_ERRORS;      <span class="cm">-- any failures</span></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── DAG ── -->
+<section class="doc-section" id="dag">
+  <div class="eyebrow">Code walkthrough</div>
+  <h2>DAG file — <code>snowflake_bulk_ingestion.py</code></h2>
+  <p>The DAG file is pure orchestration. It wires tasks together and calls helpers. No SQL, no result parsing — those live in the helper classes.</p>
+
+  <h3>The full task pipeline</h3>
+  <div class="pipeline">
+    <div class="pipe-task">
+      <span class="pipe-task-name">get_configs</span>
+      <span class="pipe-task-sub">reads INGEST_CONFIG</span>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-task">
+      <span class="pipe-task-name">validate_table</span>
+      <span class="pipe-task-sub">dry-run COPY check</span>
+      <span class="pipe-expand">× N tables</span>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-task">
+      <span class="pipe-task-name">load_table</span>
+      <span class="pipe-task-sub">runs COPY INTO</span>
+      <span class="pipe-expand">× N tables</span>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-task">
+      <span class="pipe-task-name">send_summary_email</span>
+      <span class="pipe-task-sub">runs even on failure</span>
+    </div>
+  </div>
+
+  <div class="codeblock">
+    <div class="codeblock-header"><span class="codeblock-lang">PYTHON</span><span class="codeblock-file">snowflake_bulk_ingestion.py — wire-up</span></div>
+    <pre><span class="cm"># The entire flow in 4 lines.</span>
+<span class="cm"># .expand() creates one parallel task per table.</span>
+configs   = <span class="fn">get_configs</span>()
+validated = validate_table.<span class="fn">expand</span>(config=configs)
+loaded    = load_table.<span class="fn">expand</span>(config=validated)
+loaded >> <span class="fn">send_summary_email</span>()</pre>
+  </div>
+
+  <h3>What each task does</h3>
+  <table class="doc-table">
+    <thead><tr><th>Task</th><th>Input</th><th>Output</th><th>Job</th></tr></thead>
+    <tbody>
+      <tr><td><code>get_configs</code></td><td>—</td><td>List of dicts</td><td>Reads <code>IS_ACTIVE=TRUE</code> rows from INGEST_CONFIG, ordered by PRIORITY</td></tr>
+      <tr><td><code>validate_table</code></td><td>One config dict</td><td>Same dict</td><td>Dry-run COPY with <code>VALIDATION_MODE=RETURN_ERRORS</code>. Fails immediately on bad files.</td></tr>
+      <tr><td><code>load_table</code></td><td>One config dict</td><td>—</td><td>Calls SnowflakeLoader, writes audit rows, saves per-file results</td></tr>
+      <tr><td><code>send_summary_email</code></td><td>—</td><td>—</td><td>Emails a status table for all tables. <code>trigger_rule="all_done"</code> — runs even if tasks failed.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Inside <code>load_table</code> — the 5 steps</h3>
+  <div class="codeblock">
+    <div class="codeblock-header"><span class="codeblock-lang">PYTHON</span><span class="codeblock-file">load_table task</span></div>
+    <pre>run_id = <span class="fn">str</span>(<span class="cl">uuid</span>.uuid4())
+<span class="cm"># ↑ printed in Airflow task log — copy it to query audit tables</span>
+
+logger.<span class="fn">start</span>()              <span class="cm"># 1. INSERT STARTED row into ETL_AUDIT</span>
+
+<span class="kw">try</span>:
+    result = loader.<span class="fn">load</span>(config)       <span class="cm"># 2. COPY INTO via SnowflakeLoader</span>
+    writer.<span class="fn">write</span>(run_id, result)       <span class="cm"># 3. save per-file results</span>
+    logger.<span class="fn">success</span>(result.total_rows)  <span class="cm"># 4. UPDATE ETL_AUDIT to SUCCESS</span>
+
+<span class="kw">except</span> Exception <span class="kw">as</span> exc:
+    logger.<span class="fn">failure</span>(exc)               <span class="cm"># 5a. write ETL_ERROR_LOG + mark FAILED</span>
+    <span class="kw">raise</span>                              <span class="cm"># 5b. Airflow sees failure → retries</span></pre>
+  </div>
+</section>
+
+<!-- ── AUDIT LOGGER ── -->
+<section class="doc-section" id="audit-logger">
+  <div class="eyebrow">Helper class</div>
+  <h2>AuditLogger — <code>audit_logger.py</code></h2>
+  <p>Owns every write to <code>ETL_AUDIT</code> and <code>ETL_ERROR_LOG</code>. The DAG task calls three methods and never writes audit SQL directly.</p>
+
+  <h3>API — three methods</h3>
+  <div class="codeblock">
+    <div class="codeblock-header"><span class="codeblock-lang">PYTHON</span><span class="codeblock-file">audit_logger.py</span></div>
+    <pre>logger = <span class="cl">AuditLogger</span>(hook, run_id=<span class="st">"abc-123"</span>, config=config)
+
+logger.<span class="fn">start</span>()
+<span class="cm"># → INSERT INTO ETL_AUDIT ... STATUS='STARTED'
+# Always call first — visible even if the process crashes mid-load</span>
+
+logger.<span class="fn">success</span>(rows_loaded=<span class="nb">5000</span>, files_loaded=<span class="nb">3</span>)
+<span class="cm"># → UPDATE ETL_AUDIT SET STATUS='SUCCESS', ROWS_LOADED=5000 ...</span>
+
+logger.<span class="fn">failure</span>(exc)
+<span class="cm"># → INSERT INTO ETL_ERROR_LOG (full traceback, error type)
+# → UPDATE ETL_AUDIT SET STATUS='FAILED'
+# Never raises — an audit write failure never hides the original error</span></pre>
+  </div>
+
+  <h3>ETL_AUDIT — column reference</h3>
+  <table class="doc-table">
+    <thead><tr><th>Column</th><th>Set by</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><code>RUN_ID</code></td><td>start()</td><td>UUID printed in Airflow task log — use this for all debug queries</td></tr>
+      <tr><td><code>AIRFLOW_RUN_ID</code></td><td>start()</td><td>Airflow dag_run_id — links to the Airflow UI</td></tr>
+      <tr><td><code>STATUS</code></td><td>start/success/failure</td><td>STARTED → SUCCESS or FAILED</td></tr>
+      <tr><td><code>DURATION_SECS</code></td><td>auto (virtual column)</td><td>Calculated automatically as END_TIME - START_TIME</td></tr>
+      <tr><td><code>ROWS_LOADED</code></td><td>success()</td><td>Total rows written across all files</td></tr>
+      <tr><td><code>FILES_LOADED</code></td><td>success()</td><td>Number of files with status=LOADED</td></tr>
+      <tr><td><code>ERROR_MESSAGE</code></td><td>failure()</td><td>First 5000 chars of the exception message</td></tr>
+    </tbody>
+  </table>
+
+  <div class="alert alert-blue">
+    <strong>Why insert STARTED before the load?</strong>
+    <p>If the process is killed mid-run (OOM, network drop, server restart), the STARTED row remains visible in ETL_AUDIT. You know something was running — even without a FAILED status being written. Without this, a killed process is invisible.</p>
+  </div>
+</section>
+
+<!-- ── LOADER ── -->
+<section class="doc-section" id="loader">
+  <div class="eyebrow">Helper class</div>
+  <h2>SnowflakeLoader — <code>snowflake_loader.py</code></h2>
+  <p>Owns all COPY INTO logic and result parsing. The <code>load()</code> method dispatches to the right private method based on <code>load_mode</code>. Adding CDC means adding a method here — nothing in the DAG changes.</p>
+
+  <h3>The COPY INTO SQL it generates</h3>
+  <div class="codeblock">
+    <div class="codeblock-header"><span class="codeblock-lang">SQL</span><span class="codeblock-file">built at runtime from config dict</span></div>
+    <pre><span class="kw">COPY INTO</span> PUBLIC.CUSTOMER
+<span class="kw">FROM</span>   @RAW.CUSTOMER_STAGE
+FILE_FORMAT          = (FORMAT_NAME = CSV_FORMAT)
+PATTERN              = <span class="st">'.*\.csv'</span>
+MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE   <span class="cm">-- maps by column name, not position</span>
+ON_ERROR             = CONTINUE            <span class="cm">-- skips bad files, doesn't abort the task</span>
+FORCE                = FALSE               <span class="cm">-- skips already-loaded files (APPEND mode)</span></pre>
+  </div>
+
+  <h3>LoadResult — what the method returns</h3>
+  <div class="codeblock">
+    <div class="codeblock-header"><span class="codeblock-lang">PYTHON</span><span class="codeblock-file">LoadResult dataclass</span></div>
+    <pre>result = loader.<span class="fn">load</span>(config)
+
+result.total_rows_loaded    <span class="cm"># int — total rows written to target table</span>
+result.total_files_loaded   <span class="cm"># int — files with status LOADED</span>
+result.total_files_failed   <span class="cm"># int — files with status LOAD_FAILED</span>
+result.had_file_errors      <span class="cm"># bool — True if any file failed</span>
+result.file_results         <span class="cm"># List[FileResult] — one per file in stage</span>
+
+<span class="cm"># Each FileResult has:</span>
+fr.file_name    <span class="cm"># "orders_2025-01-01.parquet"</span>
+fr.status       <span class="cm"># "LOADED" | "LOAD_FAILED" | "PARTIALLY_LOADED"</span>
+fr.rows_loaded  <span class="cm"># 5000</span>
+fr.errors_seen  <span class="cm"># 0</span>
+fr.first_error  <span class="cm"># "Field delimiter not found"</span>
+fr.error_line   <span class="cm"># 42  ← line number in the file</span>
+fr.error_column <span class="cm"># "CUSTOMER_ID"  ← which column rejected the value</span></pre>
+  </div>
+
+  <div class="alert alert-amber">
+    <strong>ON_ERROR = CONTINUE explained:</strong>
+    <p>If one file in the stage is unreadable, Snowflake skips it and loads the rest. The bad file appears in <code>ETL_COPY_RESULTS</code> with <code>STATUS=LOAD_FAILED</code>. The Airflow task still succeeds, but <code>result.had_file_errors</code> is True and a warning is logged. To make a bad file fail the task, change <code>ON_ERROR</code> to <code>ABORT_STATEMENT</code>.</p>
+  </div>
+</section>
+
+<!-- ── WRITER ── -->
+<section class="doc-section" id="writer">
+  <div class="eyebrow">Helper class</div>
+  <h2>CopyResultsWriter — <code>copy_results_writer.py</code></h2>
+  <p>Saves every <code>FileResult</code> to <code>ETL_COPY_RESULTS</code> as a single bulk INSERT. This is your most useful debugging table — it gives you the exact file name, line number, and column for every error.</p>
+
+  <h3>ETL_COPY_RESULTS — column reference</h3>
+  <table class="doc-table">
+    <thead><tr><th>Column</th><th>Example</th><th>What it tells you</th></tr></thead>
+    <tbody>
+      <tr><td><code>FILE_NAME</code></td><td>customers_2025-01.csv</td><td>The exact file that caused the error</td></tr>
+      <tr><td><code>STATUS</code></td><td>LOAD_FAILED</td><td>LOADED, LOAD_FAILED, or PARTIALLY_LOADED</td></tr>
+      <tr><td><code>ROWS_PARSED</code></td><td>10000</td><td>How many rows Snowflake attempted to read</td></tr>
+      <tr><td><code>ROWS_LOADED</code></td><td>9995</td><td>How many rows were actually written</td></tr>
+      <tr><td><code>ERRORS_SEEN</code></td><td>5</td><td>Number of rows that failed to load</td></tr>
+      <tr><td><code>FIRST_ERROR</code></td><td>Field delimiter not found</td><td>The first error message from Snowflake</td></tr>
+      <tr><td><code>FIRST_ERROR_LINE</code></td><td>42</td><td>Line number in the file where it broke</td></tr>
+      <tr><td><code>ERROR_COLUMN_NAME</code></td><td>CUSTOMER_ID</td><td>Which column rejected the value</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ── DEBUG ── -->
+<section class="doc-section" id="debug">
+  <div class="eyebrow">Operations</div>
+  <h2>Debug a failure</h2>
+  <p>Follow these steps in order. You will find the root cause within 3 minutes. Open <code>02_debug_queries.sql</code> in Snowsight — the queries are already there, ready to paste.</p>
+
+  <div class="alert alert-teal">
+    <strong>Find the RUN_ID first.</strong>
+    <p>Every query below needs a RUN_ID. It's printed at the top of every Airflow task log: <code>[load_table] START table=ORDERS run_id=f3a2b1c4-...</code> — copy it.</p>
+  </div>
+
+  <div class="debug-steps">
+    <div class="debug-step">
+      <div class="debug-badge">Step 1</div>
+      <div class="debug-body">
+        <h4>Which table failed?</h4>
+        <div class="codeblock">
+          <div class="codeblock-header"><span class="codeblock-lang">SQL</span></div>
+          <pre><span class="kw">SELECT</span> TABLE_NAME, STATUS, START_TIME, DURATION_SECS, ERROR_MESSAGE
+<span class="kw">FROM</span>   ETL_AUDIT
+<span class="kw">WHERE</span>  STATUS = <span class="st">'FAILED'</span>
+  <span class="kw">AND</span>  START_TIME >= <span class="fn">DATEADD</span>(<span class="st">'hour'</span>, -24, <span class="fn">CURRENT_TIMESTAMP</span>())
+<span class="kw">ORDER BY</span> START_TIME <span class="kw">DESC</span>;</pre>
+        </div>
+        <p>Copy the <code>RUN_ID</code> from the result. Use it in all steps below.</p>
+      </div>
+    </div>
+
+    <div class="debug-step">
+      <div class="debug-badge">Step 2</div>
+      <div class="debug-body">
+        <h4>Which FILE caused it? (line + column)</h4>
+        <div class="codeblock">
+          <div class="codeblock-header"><span class="codeblock-lang">SQL</span></div>
+          <pre><span class="kw">SELECT</span> FILE_NAME, STATUS, ERRORS_SEEN,
+       FIRST_ERROR, FIRST_ERROR_LINE, ERROR_COLUMN_NAME
+<span class="kw">FROM</span>   ETL_COPY_RESULTS
+<span class="kw">WHERE</span>  RUN_ID = <span class="st">'&lt;paste RUN_ID here&gt;'</span>
+<span class="kw">ORDER BY</span> STATUS <span class="kw">DESC</span>;</pre>
+        </div>
+        <p>This is the most useful query. It gives you the exact file, line number, and column name.</p>
+      </div>
+    </div>
+
+    <div class="debug-step">
+      <div class="debug-badge">Step 3</div>
+      <div class="debug-body">
+        <h4>Full Python traceback (if Steps 1–2 don't explain it)</h4>
+        <div class="codeblock">
+          <div class="codeblock-header"><span class="codeblock-lang">SQL</span></div>
+          <pre><span class="kw">SELECT</span> ERROR_TYPE, ERROR_MESSAGE, STACK_TRACE
+<span class="kw">FROM</span>   ETL_ERROR_LOG
+<span class="kw">WHERE</span>  RUN_ID = <span class="st">'&lt;paste RUN_ID here&gt;'</span>;</pre>
+        </div>
+        <p>Use this for connection errors, SQL syntax errors, or anything that happened before the COPY ran.</p>
+      </div>
+    </div>
+
+    <div class="debug-step">
+      <div class="debug-badge">Step 4</div>
+      <div class="debug-body">
+        <h4>Check what files are actually in the stage</h4>
+        <div class="codeblock">
+          <div class="codeblock-header"><span class="codeblock-lang">SQL</span></div>
+          <pre>LIST @RAW.CUSTOMER_STAGE;   <span class="cm">-- replace with your stage name</span></pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="debug-step">
+      <div class="debug-badge">Step 5</div>
+      <div class="debug-body">
+        <h4>Preview errors without loading</h4>
+        <div class="codeblock">
+          <div class="codeblock-header"><span class="codeblock-lang">SQL</span></div>
+          <pre><span class="kw">COPY INTO</span> PUBLIC.CUSTOMER
+<span class="kw">FROM</span>   @RAW.CUSTOMER_STAGE
+FILE_FORMAT     = (FORMAT_NAME = CSV_FORMAT)
+VALIDATION_MODE = RETURN_ERRORS;  <span class="cm">-- shows all errors, loads nothing</span></pre>
+        </div>
+        <p>Fix the files in the stage, then re-trigger the DAG. Airflow will retry automatically up to 3 times.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── LOAD MODES ── -->
+<section class="doc-section" id="load-modes">
+  <div class="eyebrow">Operations</div>
+  <h2>Load modes</h2>
+  <p>Set <code>LOAD_MODE</code> per table in <code>INGEST_CONFIG</code>. The DAG dispatches automatically — no code change needed.</p>
+
+  <div class="mode-grid">
+    <div class="mode-card live">
+      <span class="mode-status">Active now</span>
+      <h4>APPEND</h4>
+      <p>Adds new rows without touching existing data. Snowflake tracks which files it has already loaded and skips them automatically (<code>FORCE=FALSE</code>).</p>
+      <ul>
+        <li>Safe to re-run — no double-loading</li>
+        <li>Best for fact tables and event logs</li>
+        <li>Daily incremental feeds</li>
+      </ul>
+    </div>
+
+    <div class="mode-card live">
+      <span class="mode-status">Active now</span>
+      <h4>TRUNCATE_LOAD</h4>
+      <p>Truncates the target table first, then loads all files. Uses <code>FORCE=TRUE</code> to override the file cache after truncation.</p>
+      <ul>
+        <li>Full replacement each run</li>
+        <li>Best for small dimension tables</li>
+        <li>⚠ Data is gone if load fails</li>
+      </ul>
+    </div>
+
+    <div class="mode-card future">
+      <span class="mode-status">Stub ready — implement in snowflake_loader.py</span>
+      <h4>MERGE (CDC)</h4>
+      <p>Upsert using MERGE INTO. Copy files to a staging table, then MERGE into target on specified keys — handles INSERT + UPDATE in one operation.</p>
+      <ul>
+        <li>Handles late-arriving updates</li>
+        <li>Add <code>MERGE_KEYS</code> column to INGEST_CONFIG</li>
+        <li>Implement <code>_merge_load()</code></li>
+      </ul>
+    </div>
+
+    <div class="mode-card future">
+      <span class="mode-status">Stub ready — implement in snowflake_loader.py</span>
+      <h4>STREAM_CDC</h4>
+      <p>Reads from a Snowflake Stream that captures INSERT / UPDATE / DELETE changes. Merges those changes into the target table.</p>
+      <ul>
+        <li>Real-time change capture</li>
+        <li>Requires a Stream to be pre-created</li>
+        <li>Implement <code>_stream_cdc_load()</code></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ── ADD TABLE ── -->
+<section class="doc-section" id="add-table">
+  <div class="eyebrow">Operations</div>
+  <h2>Add a new table</h2>
+  <p>No code changes needed. Three SQL statements and the next DAG run picks it up.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h4>Create the target table and stage in Snowflake</h4>
+        <div class="codeblock">
+          <div class="codeblock-header"><span class="codeblock-lang">SQL</span></div>
+          <pre><span class="kw">CREATE OR REPLACE TABLE</span> PUBLIC.INVOICES (
+    INVOICE_ID  NUMBER,
+    CUSTOMER_ID NUMBER,
+    AMOUNT      FLOAT,
+    CREATED_AT  TIMESTAMP
+);
+
+<span class="kw">CREATE OR REPLACE STAGE</span> RAW.INVOICES_STAGE;</pre>
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h4>Upload files to the stage</h4>
+        <div class="codeblock">
+          <div class="codeblock-header"><span class="codeblock-lang">SQL</span></div>
+          <pre>PUT file:///local/path/invoices_2025-01-01.csv @RAW.INVOICES_STAGE;</pre>
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h4>Insert a row into INGEST_CONFIG — done</h4>
+        <div class="codeblock">
+          <div class="codeblock-header"><span class="codeblock-lang">SQL</span></div>
+          <pre><span class="kw">INSERT INTO</span> INGEST_CONFIG
+    (TABLE_NAME, STAGE_NAME, FILE_FORMAT, LOAD_MODE, PRIORITY, NOTES)
+<span class="kw">VALUES</span>
+    (<span class="st">'INVOICES'</span>, <span class="st">'@RAW.INVOICES_STAGE'</span>, <span class="st">'CSV_FORMAT'</span>, <span class="st">'APPEND'</span>, 40, <span class="st">'Daily invoices'</span>);</pre>
+        </div>
+        <p>The next scheduled DAG run loads this table. No code change, no DAG restart.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CDC ── -->
+<section class="doc-section" id="cdc">
+  <div class="eyebrow">Operations</div>
+  <h2>Adding CDC / MERGE</h2>
+  <p>The extension point is already stubbed in <code>snowflake_loader.py</code>. You implement the method — the DAG routing works automatically.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h4>Implement <code>_merge_load()</code> in snowflake_loader.py</h4>
+        <div class="codeblock">
+          <div class="codeblock-header"><span class="codeblock-lang">PYTHON</span><span class="codeblock-file">plugins/ingestion/snowflake_loader.py</span></div>
+          <pre><span class="kw">def</span> <span class="fn">_merge_load</span>(<span class="nb">self</span>, config: <span class="cl">dict</span>) -> <span class="cl">LoadResult</span>:
+    staging    = <span class="st">f"STG_{config['table_name']}_{uuid.uuid4().hex[:8]}"</span>
+    merge_keys = config.get(<span class="st">"merge_keys"</span>, <span class="st">"ID"</span>)
+
+    <span class="cm"># 1. COPY files into a temp staging table</span>
+    <span class="nb">self</span>.<span class="fn">_copy_to_staging</span>(config, staging)
+
+    <span class="cm"># 2. MERGE staging into target on merge_keys</span>
+    <span class="nb">self</span>.hook.<span class="fn">run</span>(<span class="st">f"""
+        MERGE INTO {config['target_schema']}.{config['table_name']} tgt
+        USING {staging} src ON tgt.{merge_keys} = src.{merge_keys}
+        WHEN MATCHED     THEN UPDATE SET ...
+        WHEN NOT MATCHED THEN INSERT VALUES (...)
+    """</span>)
+
+    <span class="cm"># 3. Drop the staging table</span>
+    <span class="nb">self</span>.hook.<span class="fn">run</span>(<span class="st">f"DROP TABLE IF EXISTS {staging}"</span>)
+    <span class="kw">return</span> <span class="cl">LoadResult</span>(...)</pre>
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h4>Add the dispatch line in <code>load()</code></h4>
+        <div class="codeblock">
+          <div class="codeblock-header"><span class="codeblock-lang">PYTHON</span></div>
+          <pre><span class="kw">elif</span> load_mode == <span class="st">"MERGE"</span>:
+    <span class="kw">return</span> <span class="nb">self</span>.<span class="fn">_merge_load</span>(config)</pre>
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h4>Update INGEST_CONFIG — done</h4>
+        <div class="codeblock">
+          <div class="codeblock-header"><span class="codeblock-lang">SQL</span></div>
+          <pre><span class="cm">-- Add merge_keys column (one-time migration)</span>
+<span class="kw">ALTER TABLE</span> INGEST_CONFIG <span class="kw">ADD COLUMN</span> MERGE_KEYS VARCHAR(500);
+
+<span class="cm">-- Enable MERGE for a specific table</span>
+<span class="kw">UPDATE</span> INGEST_CONFIG
+<span class="kw">SET</span>    LOAD_MODE  = <span class="st">'MERGE'</span>,
+       MERGE_KEYS = <span class="st">'CUSTOMER_ID'</span>
+<span class="kw">WHERE</span>  TABLE_NAME = <span class="st">'CUSTOMER'</span>;</pre>
+        </div>
+        <p>No DAG changes needed. The existing dispatch in <code>load()</code> routes it to <code>_merge_load()</code> automatically.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── TESTING ── -->
+<section class="doc-section" id="testing">
+  <div class="eyebrow">Operations</div>
+  <h2>Testing</h2>
+  <p>Unit tests run without a real Airflow or Snowflake connection. The hook is replaced by a mock that records what SQL it receives — tests assert on the SQL content.</p>
+
+  <div class="codeblock">
+    <div class="codeblock-header"><span class="codeblock-lang">BASH</span></div>
+    <pre>pip install pytest
+pytest tests/test_helpers.py -v</pre>
+  </div>
+
+  <h3>What is covered</h3>
+  <table class="doc-table">
+    <thead><tr><th>Class</th><th>Test</th><th>Proves that…</th></tr></thead>
+    <tbody>
+      <tr><td><code>AuditLogger</code></td><td>start() SQL</td><td>STARTED row is inserted into ETL_AUDIT</td></tr>
+      <tr><td><code>AuditLogger</code></td><td>success() SQL</td><td>ETL_AUDIT is updated with row counts</td></tr>
+      <tr><td><code>AuditLogger</code></td><td>failure() order</td><td>ETL_ERROR_LOG is written before ETL_AUDIT update</td></tr>
+      <tr><td><code>AuditLogger</code></td><td>quote escaping</td><td>Single quotes in error messages don't break SQL</td></tr>
+      <tr><td><code>AuditLogger</code></td><td>inner failure</td><td>A failed audit write never hides the original load error</td></tr>
+      <tr><td><code>SnowflakeLoader</code></td><td>APPEND mode</td><td>TRUNCATE is never called</td></tr>
+      <tr><td><code>SnowflakeLoader</code></td><td>TRUNCATE_LOAD</td><td>TRUNCATE TABLE runs before COPY INTO</td></tr>
+      <tr><td><code>SnowflakeLoader</code></td><td>unknown mode</td><td>ValueError raised immediately</td></tr>
+      <tr><td><code>SnowflakeLoader</code></td><td>result parsing</td><td>Row + file counts sum correctly across all files</td></tr>
+      <tr><td><code>SnowflakeLoader</code></td><td>short rows</td><td>Older connector versions with fewer columns don't crash</td></tr>
+      <tr><td><code>CopyResultsWriter</code></td><td>bulk insert</td><td>All file results go in one SQL call</td></tr>
+      <tr><td><code>CopyResultsWriter</code></td><td>empty list</td><td>No SQL executed for an empty stage</td></tr>
+      <tr><td><code>CopyResultsWriter</code></td><td>long errors</td><td>first_error is trimmed to 2000 chars before INSERT</td></tr>
+    </tbody>
+  </table>
+
+  <div class="alert alert-teal">
+    <strong>New to unit testing?</strong>
+    <p>Read each test as a sentence: "test_append_does_not_call_truncate proves that APPEND mode never runs TRUNCATE TABLE." Tests are the best documentation of what each class is supposed to do — read them like a spec.</p>
+  </div>
+</section>
+
+</main>
+
+<script>
+/* ── Active nav link on scroll ── */
+const sections = document.querySelectorAll('.doc-section[id]');
+const links    = document.querySelectorAll('nav a');
+
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      links.forEach(a => a.classList.remove('active'));
+      const a = document.querySelector(`nav a[href="#${e.target.id}"]`);
+      if (a) a.classList.add('active');
+    }
+  });
+}, {rootMargin: '-15% 0px -70% 0px'});
+
+sections.forEach(s => io.observe(s));
+
+/* ── Sidebar search ── */
+function filterNav(q) {
+  document.querySelectorAll('nav a').forEach(a => {
+    const match = a.textContent.toLowerCase().includes(q.toLowerCase());
+    a.style.display = match ? '' : 'none';
+  });
+}
+</script>
+
+</body>
+</html>
