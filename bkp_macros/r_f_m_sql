@@ -1,0 +1,618 @@
+{% macro custom_check_scd2_raw_to_foundation(
+    source_model,
+    target_model,
+    key_columns,
+    source_key_columns,
+    target_key_columns,
+    source_trim_columns,
+    source_from_column,
+    source_to_column,
+    source_deleted_flag_column,
+    source_dml_type_column,
+    target_from_column,
+    target_to_column,
+    target_deleted_flag_column,
+    target_dml_type_column,
+    look_back=25,
+    lag_minutes=60,
+    raise_error=False,
+    validate_column=none,
+    validate_source_column=none,
+    validate_target_column=none
+) %}
+
+{# =================================================================
+   Macro : custom_check_scd2_raw_to_foundation
+   Validates SCD Type-2 pipeline from RAW to FOUNDATION layer.
+   Single file — no helper macros needed.
+   Supports : INSERT / UPDATE / DELETE / LATE ARRIVAL / COLUMN CHECK.
+
+   Parameters
+   ----------
+   source_model               : raw dbt model name (string, resolved
+                                via ref() inside this macro)
+                                e.g. 'raw___bis___bst_cust_reln'
+   target_model               : foundation dbt model name (string,
+                                resolved via ref() inside this macro)
+                                e.g. 'foundation___fdp__custmstr___fdp__party_relationship'
+   key_columns                : shared alias column names used for
+                                JOINs and output (list)
+                                e.g. ['CUSTOMER_ID','RELATIONSHIP_TYPE_CODE',
+                                      'RELATIONSHIP_CODE','RELATED_CUSTOMER_ID']
+   source_key_columns         : actual column names in source (raw)
+                                in same order as key_columns
+                                e.g. ['CUSTOMER1_NO','RELATIONSHIP_TYPE',
+                                      'RELATIONSHIP_CODE','CUSTOMER2_NO']
+   target_key_columns         : actual column names in target (foundation)
+                                in same order as key_columns
+                                e.g. ['CUSTOMER_ID','RELATIONSHIP_TYPE_CODE',
+                                      'RELATIONSHIP_CODE','RELATED_CUSTOMER_ID']
+   source_trim_columns        : subset of source_key_columns to TRIM()
+                                before joining (handles whitespace diffs)
+                                e.g. ['RELATIONSHIP_TYPE','RELATIONSHIP_CODE']
+                                pass [] to skip trimming
+   source_from_column         : effective_from col in source (raw)
+                                e.g. 'DWH_EFFECTIVE_FROM_TSTAMP'
+   source_to_column           : effective_to col in source (raw)
+                                e.g. 'DWH_EFFECTIVE_TO_TSTAMP'
+   source_deleted_flag_column : deleted flag col in source (raw)
+                                e.g. 'DWH_IS_DELETED_FLAG'
+   source_dml_type_column     : DML type col in source (raw)
+                                e.g. 'DWH_LATEST_DML_TYPE_CODE'
+   target_from_column         : effective_from col in target (foundation)
+                                e.g. 'DWH_EFFECTIVE_FROM_TSTAMP'
+   target_to_column           : effective_to col in target (foundation)
+                                e.g. 'DWH_EFFECTIVE_TO_TSTAMP'
+   target_deleted_flag_column : deleted flag col in target (foundation)
+                                e.g. 'DWH_IS_DELETED_FLAG'
+   target_dml_type_column     : DML type col in target (foundation)
+                                e.g. 'DWH_LATEST_DML_TYPE_CODE'
+   look_back                  : days to look back (default 25)
+   lag_minutes                : lag in minutes to skip recent
+                                unprocessed data (default 60)
+   raise_error                : raise compiler error on failure
+                                (default False)
+   validate_column            : shared alias for the optional non-key
+                                column to compare between source and target
+                                used in SELECT aliases and FAIL messages
+                                e.g. 'RELATIONSHIP_STATUS'
+                                pass none to skip column check
+   validate_source_column     : actual column name in source (raw) for
+                                the non-key column being validated
+                                (may differ from validate_column alias)
+                                e.g. 'RELATIONSHIP_STATUS'
+                                if same as validate_column, pass the
+                                same value
+   validate_target_column     : actual column name in target (foundation)
+                                for the non-key column being validated
+                                (may differ from validate_column alias)
+                                e.g. 'RELATIONSHIP_STATUS_CODE'
+                                if same as validate_column, pass the
+                                same value
+================================================================= #}
+
+{# ── Resolve relations from model name strings ── #}
+{% set source_relation = ref(source_model) %}
+{% set target_relation = ref(target_model) %}
+
+{{ log("=== SCD2 Raw→Foundation Validation Macro Started ===",        info=True) }}
+{{ log("Source Model               : " ~ source_model,                info=True) }}
+{{ log("Target Model               : " ~ target_model,                info=True) }}
+{{ log("Resolved Source Relation   : " ~ source_relation,             info=True) }}
+{{ log("Resolved Target Relation   : " ~ target_relation,             info=True) }}
+{{ log("Key Columns (alias)        : " ~ key_columns,                 info=True) }}
+{{ log("Source Key Columns         : " ~ source_key_columns,          info=True) }}
+{{ log("Target Key Columns         : " ~ target_key_columns,          info=True) }}
+{{ log("Source Trim Columns        : " ~ source_trim_columns,         info=True) }}
+{{ log("Source From Column         : " ~ source_from_column,          info=True) }}
+{{ log("Source To Column           : " ~ source_to_column,            info=True) }}
+{{ log("Source Deleted Flag Column : " ~ source_deleted_flag_column,  info=True) }}
+{{ log("Source DML Type Column     : " ~ source_dml_type_column,      info=True) }}
+{{ log("Target From Column         : " ~ target_from_column,          info=True) }}
+{{ log("Target To Column           : " ~ target_to_column,            info=True) }}
+{{ log("Target Deleted Flag Column : " ~ target_deleted_flag_column,  info=True) }}
+{{ log("Target DML Type Column     : " ~ target_dml_type_column,      info=True) }}
+{{ log("Look Back (days)           : " ~ look_back,                   info=True) }}
+{{ log("Lag Minutes                : " ~ lag_minutes,                 info=True) }}
+{{ log("Validate Column (alias)    : " ~ validate_column,             info=True) }}
+{{ log("Validate Source Column     : " ~ validate_source_column,      info=True) }}
+{{ log("Validate Target Column     : " ~ validate_target_column,      info=True) }}
+
+{# ── Validate list lengths ── #}
+{% if key_columns | length != source_key_columns | length %}
+    {{ exceptions.raise_compiler_error(
+        "key_columns and source_key_columns must be the same length. Got "
+        ~ key_columns | length ~ " key_columns and "
+        ~ source_key_columns | length ~ " source_key_columns."
+    ) }}
+{% endif %}
+
+{% if key_columns | length != target_key_columns | length %}
+    {{ exceptions.raise_compiler_error(
+        "key_columns and target_key_columns must be the same length. Got "
+        ~ key_columns | length ~ " key_columns and "
+        ~ target_key_columns | length ~ " target_key_columns."
+    ) }}
+{% endif %}
+
+{# ── Validate column check params are consistent ── #}
+{% if validate_column is not none and validate_source_column is none %}
+    {{ exceptions.raise_compiler_error(
+        "validate_source_column is required when validate_column is provided."
+    ) }}
+{% endif %}
+{% if validate_column is not none and validate_target_column is none %}
+    {{ exceptions.raise_compiler_error(
+        "validate_target_column is required when validate_column is provided."
+    ) }}
+{% endif %}
+
+{# ── Capture current timestamp once for consistent time windows ── #}
+{% set current_ts = None %}
+{% if execute %}
+    {% set current_ts_query %}
+        SELECT CURRENT_TIMESTAMP AS current_ts
+    {% endset %}
+    {% set current_ts_result = run_query(current_ts_query) %}
+    {% set current_ts = current_ts_result.columns[0].values()[0] %}
+    {{ log("Current Timestamp : " ~ current_ts, info=True) }}
+{% endif %}
+
+{% set generated_sql %}
+
+WITH source_data AS (
+    SELECT
+        {# ── Source key columns — apply TRIM() if listed in source_trim_columns ── #}
+        {% for i in range(source_key_columns | length) %}
+            {% if source_key_columns[i] in source_trim_columns %}
+        TRIM({{ source_key_columns[i] }})                                AS {{ key_columns[i] }},
+            {% else %}
+        {{ source_key_columns[i] }}                                      AS {{ key_columns[i] }},
+            {% endif %}
+        {% endfor %}
+
+        {# ── Optional non-key column from source (aliased for clean JOINs) ── #}
+        {% if validate_column is not none %}
+        {{ validate_source_column }}                                     AS {{ validate_column }},
+        {% endif %}
+
+        {{ source_from_column }}                                         AS src_effective_from,
+        {{ source_to_column }}                                           AS src_effective_to,
+        {{ source_dml_type_column }}                                     AS src_dml_type_code,
+        {{ source_deleted_flag_column }}                                 AS src_is_deleted_flag,
+
+        -- Row number per key ordered by effective_from ASC
+        ROW_NUMBER() OVER (
+            PARTITION BY {{ key_columns | join(', ') }}
+            ORDER BY {{ source_from_column }} ASC
+        )                                                                AS record_order,
+
+        CASE
+            WHEN {{ source_dml_type_column }} = 'D'
+             AND {{ source_deleted_flag_column }} = 'Y' THEN 'DELETE'
+            WHEN ROW_NUMBER() OVER (
+                     PARTITION BY {{ key_columns | join(', ') }}
+                     ORDER BY {{ source_from_column }} ASC
+                 ) = 1                                  THEN 'INSERT'
+            ELSE 'UPDATE'
+        END                                                              AS scenario,
+
+        -- Late arrival: effective_from is earlier than a row
+        -- that was already processed for the same key group
+        CASE
+            WHEN {{ source_from_column }} < MAX({{ source_from_column }}) OVER (
+                     PARTITION BY {{ key_columns | join(', ') }}
+                     ORDER BY {{ source_from_column }} ASC
+                     ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+                 )
+            THEN TRUE
+            ELSE FALSE
+        END                                                              AS is_late_arrival
+
+    FROM {{ source_relation }}
+    WHERE {{ source_from_column }} <= DATEADD(MINUTE, -{{ lag_minutes }}, '{{ current_ts }}'::TIMESTAMP_TZ)
+      AND {{ source_from_column }} >= DATEADD(DAY,    -{{ look_back }},   '{{ current_ts }}'::TIMESTAMP_TZ)
+),
+
+target_data AS (
+    SELECT
+        {# ── Target key columns aliased to match key_columns for clean JOINs ── #}
+        {% for i in range(target_key_columns | length) %}
+        {{ target_key_columns[i] }}                                      AS {{ key_columns[i] }},
+        {% endfor %}
+
+        {# ── Optional non-key column from target (may have different name) ── #}
+        {% if validate_column is not none %}
+        {{ validate_target_column }}                                     AS {{ validate_column }},
+        {% endif %}
+
+        {{ target_from_column }}                                         AS tgt_effective_from,
+        {{ target_to_column }}                                           AS tgt_effective_to,
+        {{ target_dml_type_column }}                                     AS tgt_dml_type_code,
+        {{ target_deleted_flag_column }}                                 AS tgt_is_deleted_flag,
+
+        ROW_NUMBER() OVER (
+            PARTITION BY
+                {# Partition by original target key columns —
+                   aliases not resolvable in window functions in Snowflake #}
+                {% for col in target_key_columns %}
+                {{ col }}{% if not loop.last %}, {% endif %}
+                {% endfor %}
+            ORDER BY {{ target_from_column }} ASC
+        )                                                                AS record_order
+
+    FROM {{ target_relation }}
+    WHERE {{ target_from_column }} <= DATEADD(MINUTE, -{{ lag_minutes }}, '{{ current_ts }}'::TIMESTAMP_TZ)
+      AND {{ target_from_column }} >= DATEADD(DAY,    -{{ look_back }},   '{{ current_ts }}'::TIMESTAMP_TZ)
+),
+
+-- ============================================================
+-- CHECK 1 : INSERT and UPDATE (including late arrivals)
+-- Validates effective_from, effective_to and optional column.
+-- ============================================================
+insert_update_check AS (
+    SELECT
+        {% for col in key_columns %}s.{{ col }}, {% endfor %}
+        s.record_order,
+
+        -- Label late arrivals distinctly
+        CASE
+            WHEN s.is_late_arrival = TRUE THEN s.scenario || '_LATE'
+            ELSE s.scenario
+        END                                                              AS scenario,
+
+        s.src_effective_from,
+        s.src_effective_to,
+        t.tgt_effective_from,
+        t.tgt_effective_to,
+
+        {# ── Expose source and target values of non-key column for debugging ── #}
+        {% if validate_column is not none %}
+        s.{{ validate_column }}                                          AS src_{{ validate_column }},
+        t.{{ validate_column }}                                          AS tgt_{{ validate_column }},
+        {% endif %}
+
+        CASE
+            WHEN t.{{ key_columns[0] }} IS NULL
+                THEN 'FAIL - Row missing in foundation for record_order '
+                     || s.record_order::VARCHAR
+            WHEN s.src_effective_from <> t.tgt_effective_from
+                THEN 'FAIL - effective_from mismatch (src: '
+                     || s.src_effective_from::VARCHAR
+                     || ', tgt: ' || t.tgt_effective_from::VARCHAR || ')'
+            WHEN s.src_effective_to <> t.tgt_effective_to
+                THEN 'FAIL - effective_to mismatch (src: '
+                     || s.src_effective_to::VARCHAR
+                     || ', tgt: ' || t.tgt_effective_to::VARCHAR || ')'
+            {# ── Optional column exact match check ── #}
+            {% if validate_column is not none %}
+            WHEN s.{{ validate_column }} IS DISTINCT FROM t.{{ validate_column }}
+                THEN 'FAIL - {{ validate_column }} mismatch (src: '
+                     || COALESCE(s.{{ validate_column }}::VARCHAR, 'NULL')
+                     || ', tgt: '
+                     || COALESCE(t.{{ validate_column }}::VARCHAR, 'NULL') || ')'
+            {% endif %}
+            ELSE 'PASS'
+        END                                                              AS row_result
+
+    FROM source_data s
+    LEFT JOIN target_data t
+        ON  {% for col in key_columns %}
+            s.{{ col }} = t.{{ col }}{% if not loop.last %} AND {% endif %}
+            {% endfor %}
+        AND s.record_order = t.record_order
+    WHERE s.scenario IN ('INSERT', 'UPDATE')
+),
+
+-- ============================================================
+-- CHECK 2 : DELETE scenario
+-- Validates flags, effective_from, effective_to and optional column.
+-- ============================================================
+delete_check AS (
+    SELECT
+        {% for col in key_columns %}s.{{ col }}, {% endfor %}
+        s.record_order,
+        s.scenario,
+        s.src_effective_from,
+        s.src_effective_to,
+        t.tgt_effective_from,
+        t.tgt_effective_to,
+
+        {% if validate_column is not none %}
+        s.{{ validate_column }}                                          AS src_{{ validate_column }},
+        t.{{ validate_column }}                                          AS tgt_{{ validate_column }},
+        {% endif %}
+
+        CASE
+            WHEN t.{{ key_columns[0] }} IS NULL
+                THEN 'FAIL - Row missing in foundation for record_order '
+                     || s.record_order::VARCHAR
+            WHEN t.tgt_is_deleted_flag IS DISTINCT FROM 'Y'
+                THEN 'FAIL - tgt_is_deleted_flag is not Y (actual: '
+                     || COALESCE(t.tgt_is_deleted_flag, 'NULL') || ')'
+            WHEN t.tgt_dml_type_code IS DISTINCT FROM 'D'
+                THEN 'FAIL - tgt_dml_type_code is not D (actual: '
+                     || COALESCE(t.tgt_dml_type_code, 'NULL') || ')'
+            WHEN s.src_effective_from <> t.tgt_effective_from
+                THEN 'FAIL - effective_from mismatch (src: '
+                     || s.src_effective_from::VARCHAR
+                     || ', tgt: ' || t.tgt_effective_from::VARCHAR || ')'
+            WHEN s.src_effective_to <> t.tgt_effective_to
+                THEN 'FAIL - effective_to mismatch (src: '
+                     || s.src_effective_to::VARCHAR
+                     || ', tgt: ' || t.tgt_effective_to::VARCHAR || ')'
+            {% if validate_column is not none %}
+            WHEN s.{{ validate_column }} IS DISTINCT FROM t.{{ validate_column }}
+                THEN 'FAIL - {{ validate_column }} mismatch (src: '
+                     || COALESCE(s.{{ validate_column }}::VARCHAR, 'NULL')
+                     || ', tgt: '
+                     || COALESCE(t.{{ validate_column }}::VARCHAR, 'NULL') || ')'
+            {% endif %}
+            ELSE 'PASS'
+        END                                                              AS row_result
+
+    FROM source_data s
+    LEFT JOIN target_data t
+        ON  {% for col in key_columns %}
+            s.{{ col }} = t.{{ col }}{% if not loop.last %} AND {% endif %}
+            {% endfor %}
+        AND s.record_order = t.record_order
+    WHERE s.scenario = 'DELETE'
+),
+
+-- ============================================================
+-- CHECK 3 : Late arrival — prior row back-dating
+-- When a late-arriving raw row lands between two existing
+-- foundation rows, the PRIOR foundation row's effective_to
+-- must be back-dated to (late_src_effective_from − 1 µs).
+-- Without this check, prior row stays open at 9999-12-31
+-- causing an overlap in SCD Type-2 history.
+-- Joins on (record_order − 1) to fetch the prior target row.
+-- (column check not applicable here — prior row back-dating only)
+-- ============================================================
+missing_late_check AS (
+    SELECT
+        {% for col in key_columns %}s.{{ col }}, {% endfor %}
+        s.record_order,
+        'LATE_PRIOR_ROW_BACKDATE'                                        AS scenario,
+        s.src_effective_from,
+        s.src_effective_to,
+        prev_t.tgt_effective_from,
+        prev_t.tgt_effective_to,
+
+        {# ── NULL placeholders to keep UNION ALL column count consistent ── #}
+        {% if validate_column is not none %}
+        NULL::VARCHAR                                                    AS src_{{ validate_column }},
+        NULL::VARCHAR                                                    AS tgt_{{ validate_column }},
+        {% endif %}
+
+        CASE
+            WHEN prev_t.{{ key_columns[0] }} IS NULL
+                THEN 'FAIL - Prior foundation row not found for record_order '
+                     || (s.record_order - 1)::VARCHAR
+            WHEN prev_t.tgt_effective_to IS DISTINCT FROM
+                 TIMESTAMPADD(MICROSECOND, -1, s.src_effective_from)
+                THEN 'FAIL - Prior row not back-dated (exp: '
+                     || TIMESTAMPADD(MICROSECOND, -1, s.src_effective_from)::VARCHAR
+                     || ', act: ' || prev_t.tgt_effective_to::VARCHAR || ')'
+            ELSE 'PASS'
+        END                                                              AS row_result
+
+    FROM source_data s
+    LEFT JOIN target_data prev_t
+        ON  {% for col in key_columns %}
+            s.{{ col }} = prev_t.{{ col }}{% if not loop.last %} AND {% endif %}
+            {% endfor %}
+        AND prev_t.record_order = s.record_order - 1
+    WHERE s.is_late_arrival = TRUE
+      AND s.scenario <> 'DELETE'
+)
+
+-- Return ONLY failing rows so dbt marks test as PASS when 0 rows returned
+SELECT * FROM (
+    SELECT * FROM insert_update_check
+    UNION ALL
+    SELECT * FROM delete_check
+    UNION ALL
+    SELECT * FROM missing_late_check
+) all_checks
+WHERE row_result <> 'PASS'
+
+ORDER BY
+    {% for col in key_columns %}{{ col }}, {% endfor %}
+    record_order, scenario
+
+{% endset %}
+
+{{ log("=== Generated SCD2 Raw→Foundation Validation SQL ===", info=True) }}
+{{ log(generated_sql,                                          info=True) }}
+{{ log("=== End of Generated SQL ===",                         info=True) }}
+
+{% if execute %}
+    {% set results    = run_query(generated_sql) %}
+    {% set fail_count = results.rows | length %}
+
+    {{ log("[SCD2 Raw→Fnd] Total failing rows : " ~ fail_count, info=True) }}
+
+    {% if fail_count > 0 %}
+        {{ log("Connect with data team for refresh", info=True) }}
+        {% if raise_error %}
+            {{ exceptions.raise_compiler_error(
+                "SCD2 Raw→Foundation validation FAILED for "
+                ~ target_relation ~ " — "
+                ~ fail_count ~ " failing row(s) found in the last "
+                ~ look_back ~ " day(s). Check dbt.log for details."
+            ) }}
+        {% else %}
+            {{ log("Warning: validation failed but continuing (raise_error=False).", info=True) }}
+        {% endif %}
+    {% else %}
+        {{ log("SCD2 Raw→Foundation validation PASSED for "
+               ~ target_relation
+               ~ " (last " ~ look_back ~ " day(s))", info=True) }}
+    {% endif %}
+{% endif %}
+
+{{ return(generated_sql) }}
+
+{% endmacro %}
+
+
+{# =================================================================
+   USAGE EXAMPLE — WITHOUT column validation (original behaviour)
+   Save as: macros/custom_check_scd2_raw_to_foundation.sql
+================================================================= #}
+
+{#
+{{ custom_check_scd2_raw_to_foundation(
+    source_model               = 'raw___bis___bst_cust_reln',
+    target_model               = 'foundation___fdp__custmstr___fdp__party_relationship',
+
+    key_columns                = ['CUSTOMER_ID', 'RELATIONSHIP_TYPE_CODE',
+                                  'RELATIONSHIP_CODE', 'RELATED_CUSTOMER_ID'],
+    source_key_columns         = ['CUSTOMER1_NO', 'RELATIONSHIP_TYPE',
+                                  'RELATIONSHIP_CODE', 'CUSTOMER2_NO'],
+    target_key_columns         = ['CUSTOMER_ID', 'RELATIONSHIP_TYPE_CODE',
+                                  'RELATIONSHIP_CODE', 'RELATED_CUSTOMER_ID'],
+    source_trim_columns        = ['RELATIONSHIP_TYPE', 'RELATIONSHIP_CODE'],
+
+    source_from_column         = 'DWH_EFFECTIVE_FROM_TSTAMP',
+    source_to_column           = 'DWH_EFFECTIVE_TO_TSTAMP',
+    source_deleted_flag_column = 'DWH_IS_DELETED_FLAG',
+    source_dml_type_column     = 'DWH_LATEST_DML_TYPE_CODE',
+
+    target_from_column         = 'DWH_EFFECTIVE_FROM_TSTAMP',
+    target_to_column           = 'DWH_EFFECTIVE_TO_TSTAMP',
+    target_deleted_flag_column = 'DWH_IS_DELETED_FLAG',
+    target_dml_type_column     = 'DWH_LATEST_DML_TYPE_CODE',
+
+    look_back                  = 25,
+    lag_minutes                = 60,
+    raise_error                = False
+) }}
+#}
+
+
+{# =================================================================
+   USAGE EXAMPLE — WITH column validation
+   Checks RELATIONSHIP_STATUS matches between source raw and target foundation.
+
+   -- Source column : RELATIONSHIP_STATUS        (raw column name)
+   -- Target column : RELATIONSHIP_STATUS_CODE   (foundation column name, different)
+   -- Alias         : RELATIONSHIP_STATUS        (shown in FAIL messages and output)
+================================================================= #}
+
+{#
+{{ custom_check_scd2_raw_to_foundation(
+    source_model               = 'raw___bis___bst_cust_reln',
+    target_model               = 'foundation___fdp__custmstr___fdp__party_relationship',
+
+    key_columns                = ['CUSTOMER_ID', 'RELATIONSHIP_TYPE_CODE',
+                                  'RELATIONSHIP_CODE', 'RELATED_CUSTOMER_ID'],
+    source_key_columns         = ['CUSTOMER1_NO', 'RELATIONSHIP_TYPE',
+                                  'RELATIONSHIP_CODE', 'CUSTOMER2_NO'],
+    target_key_columns         = ['CUSTOMER_ID', 'RELATIONSHIP_TYPE_CODE',
+                                  'RELATIONSHIP_CODE', 'RELATED_CUSTOMER_ID'],
+    source_trim_columns        = ['RELATIONSHIP_TYPE', 'RELATIONSHIP_CODE'],
+
+    source_from_column         = 'DWH_EFFECTIVE_FROM_TSTAMP',
+    source_to_column           = 'DWH_EFFECTIVE_TO_TSTAMP',
+    source_deleted_flag_column = 'DWH_IS_DELETED_FLAG',
+    source_dml_type_column     = 'DWH_LATEST_DML_TYPE_CODE',
+
+    target_from_column         = 'DWH_EFFECTIVE_FROM_TSTAMP',
+    target_to_column           = 'DWH_EFFECTIVE_TO_TSTAMP',
+    target_deleted_flag_column = 'DWH_IS_DELETED_FLAG',
+    target_dml_type_column     = 'DWH_LATEST_DML_TYPE_CODE',
+
+    look_back                  = 25,
+    lag_minutes                = 60,
+    raise_error                = False,
+
+    -- Non-key column validation (optional — omit to skip)
+    validate_column            = 'RELATIONSHIP_STATUS',
+    validate_source_column     = 'RELATIONSHIP_STATUS',
+    validate_target_column     = 'RELATIONSHIP_STATUS_CODE'
+) }}
+#}
+
+
+{# =================================================================
+   USAGE EXAMPLE — Airflow DbtRunOperationOperator
+   WITHOUT column validation  (mirrors kafka macro DAG pattern)
+================================================================= #}
+
+{#
+scd2_validation_raw_to_foundation = DbtRunOperationOperator(
+    task_id="run_custom_check_scd2_raw_to_foundation",
+    macro_name="custom_check_scd2_raw_to_foundation",
+    project_dir=project_path,
+    profile_config=profile_config,
+    args={
+        "source_model":               "raw___bis___bst_cust_reln",
+        "target_model":               "foundation___fdp__custmstr___fdp__party_relationship",
+        "key_columns":                ["CUSTOMER_ID", "RELATIONSHIP_TYPE_CODE",
+                                       "RELATIONSHIP_CODE", "RELATED_CUSTOMER_ID"],
+        "source_key_columns":         ["CUSTOMER1_NO", "RELATIONSHIP_TYPE",
+                                       "RELATIONSHIP_CODE", "CUSTOMER2_NO"],
+        "target_key_columns":         ["CUSTOMER_ID", "RELATIONSHIP_TYPE_CODE",
+                                       "RELATIONSHIP_CODE", "RELATED_CUSTOMER_ID"],
+        "source_trim_columns":        ["RELATIONSHIP_TYPE", "RELATIONSHIP_CODE"],
+        "source_from_column":         "DWH_EFFECTIVE_FROM_TSTAMP",
+        "source_to_column":           "DWH_EFFECTIVE_TO_TSTAMP",
+        "source_deleted_flag_column": "DWH_IS_DELETED_FLAG",
+        "source_dml_type_column":     "DWH_LATEST_DML_TYPE_CODE",
+        "target_from_column":         "DWH_EFFECTIVE_FROM_TSTAMP",
+        "target_to_column":           "DWH_EFFECTIVE_TO_TSTAMP",
+        "target_deleted_flag_column": "DWH_IS_DELETED_FLAG",
+        "target_dml_type_column":     "DWH_LATEST_DML_TYPE_CODE",
+        "look_back":                  look_back,
+        "raise_error":                "True",
+    },
+    dbt_executable_path=dbt_executable_path,
+)
+#}
+
+
+{# =================================================================
+   USAGE EXAMPLE — Airflow DbtRunOperationOperator
+   WITH column validation
+================================================================= #}
+
+{#
+scd2_validation_raw_to_foundation = DbtRunOperationOperator(
+    task_id="run_custom_check_scd2_raw_to_foundation",
+    macro_name="custom_check_scd2_raw_to_foundation",
+    project_dir=project_path,
+    profile_config=profile_config,
+    args={
+        "source_model":               "raw___bis___bst_cust_reln",
+        "target_model":               "foundation___fdp__custmstr___fdp__party_relationship",
+        "key_columns":                ["CUSTOMER_ID", "RELATIONSHIP_TYPE_CODE",
+                                       "RELATIONSHIP_CODE", "RELATED_CUSTOMER_ID"],
+        "source_key_columns":         ["CUSTOMER1_NO", "RELATIONSHIP_TYPE",
+                                       "RELATIONSHIP_CODE", "CUSTOMER2_NO"],
+        "target_key_columns":         ["CUSTOMER_ID", "RELATIONSHIP_TYPE_CODE",
+                                       "RELATIONSHIP_CODE", "RELATED_CUSTOMER_ID"],
+        "source_trim_columns":        ["RELATIONSHIP_TYPE", "RELATIONSHIP_CODE"],
+        "source_from_column":         "DWH_EFFECTIVE_FROM_TSTAMP",
+        "source_to_column":           "DWH_EFFECTIVE_TO_TSTAMP",
+        "source_deleted_flag_column": "DWH_IS_DELETED_FLAG",
+        "source_dml_type_column":     "DWH_LATEST_DML_TYPE_CODE",
+        "target_from_column":         "DWH_EFFECTIVE_FROM_TSTAMP",
+        "target_to_column":           "DWH_EFFECTIVE_TO_TSTAMP",
+        "target_deleted_flag_column": "DWH_IS_DELETED_FLAG",
+        "target_dml_type_column":     "DWH_LATEST_DML_TYPE_CODE",
+        "look_back":                  look_back,
+        "raise_error":                "True",
+        "validate_column":            "RELATIONSHIP_STATUS",
+        "validate_source_column":     "RELATIONSHIP_STATUS",
+        "validate_target_column":     "RELATIONSHIP_STATUS_CODE",
+    },
+    dbt_executable_path=dbt_executable_path,
+)
+#}
+
+
+exit code 0
+Done
