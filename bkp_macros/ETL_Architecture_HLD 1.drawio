@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-07-27T00:00:00.000Z" agent="Claude" version="24.0.0" type="device">
+  <diagram name="ETL HLD" id="etl-hld-page1">
+    <mxGraphModel dx="1400" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2400" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Cloud Storage S3 -->
+        <mxCell id="s3" value="Cloud Storage&#10;S3" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="400" width="140" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- SNOWFLAKE outer container -->
+        <mxCell id="snowflakeBox" value="SNOWFLAKE&#10;(All Python Runners Execute Inside Snowflake)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;verticalAlign=top;align=center;fontSize=13;fontStyle=1;fontColor=#009900;" vertex="1" parent="1">
+          <mxGeometry x="260" y="220" width="620" height="820" as="geometry" />
+        </mxCell>
+
+        <!-- CONFIGURATION LAYER container -->
+        <mxCell id="configLayer" value="CONFIGURATION LAYER" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;verticalAlign=top;align=center;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="290" y="280" width="420" height="280" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ingestConfig" value="INGEST_CONFIG" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#0000FF;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="320" y="320" width="330" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fileFormat" value="FILE_FORMAT" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#0000FF;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="320" y="400" width="330" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="snowflakeStage" value="SNOWFLAKE_STAGE" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#99CCFF;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="320" y="480" width="330" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Helper Components container -->
+        <mxCell id="helperBox" value="Helper Components&#10;(Python Runners)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;verticalAlign=top;align=center;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="290" y="600" width="420" height="420" as="geometry" />
+        </mxCell>
+
+        <mxCell id="snowflakeLoader" value="SNOWFLAKE_LOADER&#10;RUNS COPY INTO SQL&#10;Loads data into Target Table" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#0000FF;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="320" y="650" width="360" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="auditLogger" value="AUDIT_LOGGER&#10;Writes audit rows" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#0000FF;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="320" y="770" width="360" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="etlAudit" value="ETL_AUDIT&#10;(TABLE)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#8ea9db;strokeColor=#000000;fontColor=#0000FF;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="320" y="900" width="160" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="rawTable" value="RAW&#10;(TABLE)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#8ea9db;strokeColor=#000000;fontColor=#0000FF;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="520" y="900" width="160" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- AIRFLOW DAG ORCHESTRATION container -->
+        <mxCell id="airflowBox" value="AIRFLOW DAG ORCHESTRATION" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;verticalAlign=top;align=center;fontSize=13;fontStyle=1;fontColor=#E69138;" vertex="1" parent="1">
+          <mxGeometry x="920" y="220" width="1200" height="820" as="geometry" />
+        </mxCell>
+
+        <mxCell id="getConfigs" value="GET_CONFIGS&#10;Read Active Rows" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#0000FF;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="960" y="450" width="230" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="checkFileArrival" value="CHECK_FILE_ARRIVAL&#10;Verify File existence" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#0000FF;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1260" y="450" width="230" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="validateTable" value="VALIDATE_TABLE&#10;Dry-Run Check" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#0000FF;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1560" y="450" width="230" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="loadTable" value="LOAD_TABLE&#10;Execute SP" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#0000FF;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1860" y="450" width="200" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dagTaskLabel" value="Dag Task" style="text;html=1;align=center;verticalAlign=middle;fontColor=#990000;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1260" y="410" width="230" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Arrows -->
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="s3" target="snowflakeStage">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e1label" value="Raw Files (CSV)" style="text;html=1;align=center;verticalAlign=middle;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="180" y="500" width="140" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="fileFormat" target="getConfigs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="getConfigs" target="checkFileArrival">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="checkFileArrival" target="validateTable">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="validateTable" target="loadTable">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Loop back from top: config layer to validate table (top connection in original) -->
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.5;exitY=0;entryX=0.5;entryY=0;" edge="1" parent="1" source="configLayer" target="validateTable">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="500" y="250" />
+              <mxPoint x="1675" y="250" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- LOAD_TABLE invokes SNOWFLAKE_LOADER -->
+        <mxCell id="e7" value="Invokes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontColor=#990000;fontStyle=1;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="loadTable" target="snowflakeLoader">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1960" y="690" as="sourcePoint" />
+            <mxPoint x="680" y="690" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e7label" value="Target Table loads&#10;Using Snowflake_Loader" style="text;html=1;align=center;verticalAlign=middle;fontColor=#0000FF;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1560" y="600" width="220" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- SNOWFLAKE_LOADER to AUDIT_LOGGER -->
+        <mxCell id="e8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="snowflakeLoader" target="auditLogger">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- SNOWFLAKE_LOADER to RAW table -->
+        <mxCell id="e9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;exitX=0.75;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="snowflakeLoader" target="rawTable">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- AUDIT_LOGGER to ETL_AUDIT table -->
+        <mxCell id="e10" value="Audit &amp; Monitoring" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=11;" edge="1" parent="1" source="auditLogger" target="etlAudit">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Title -->
+        <mxCell id="title" value="AS HLD" style="text;html=1;fontSize=20;fontStyle=1;align=left;" vertex="1" parent="1">
+          <mxGeometry x="20" y="1060" width="200" height="40" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
